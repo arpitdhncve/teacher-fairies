@@ -16,9 +16,9 @@ export const AGENT_MODEL_DEFINITIONS = {
 		provider: 'google',
 	},
 
-	'moonshotai/kimi-k2-thinking': {
-		name: 'moonshotai/kimi-k2-thinking',
-		id: 'moonshotai/kimi-k2-thinking',
+	'anthropic/claude-haiku-4.5': {
+		name: 'anthropic/claude-haiku-4.5',
+		id: 'anthropic/claude-haiku-4.5',
 		provider: 'openrouter',
 	},
 
@@ -37,7 +37,7 @@ export const AGENT_MODEL_DEFINITIONS = {
 
 export type AgentModelName = keyof typeof AGENT_MODEL_DEFINITIONS
 
-const FALLBACK_MODEL_NAME = 'moonshotai/kimi-k2-thinking' as AgentModelName
+const FALLBACK_MODEL_NAME = 'anthropic/claude-haiku-4.5' as AgentModelName
 
 function isValidModelName(value: string | undefined): value is AgentModelName {
 	return !!value && value in AGENT_MODEL_DEFINITIONS
@@ -95,7 +95,7 @@ export function getModelPricingInfo(
 					outputPrice: 18,
 				}
 			}
-		case 'moonshotai/kimi-k2-thinking':
+		case 'anthropic/claude-haiku-4.5':
 			if (inputTokens <= TIER_THRESHOLD) {
 				return {
 					uncachedInputPrice: 3,

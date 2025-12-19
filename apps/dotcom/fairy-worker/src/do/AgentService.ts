@@ -297,10 +297,15 @@
 // 	})
 // }
 
-
-import { AgentAction, AgentModelName, AgentPrompt, DebugPart, Streaming } from '@tldraw/fairy-shared'
-import { LanguageModel, ModelMessage, streamText } from 'ai'
 import { createOpenRouter, OpenRouterProvider } from '@openrouter/ai-sdk-provider'
+import {
+	AgentAction,
+	AgentModelName,
+	AgentPrompt,
+	DebugPart,
+	Streaming,
+} from '@tldraw/fairy-shared'
+import { LanguageModel, ModelMessage, streamText } from 'ai'
 
 import { INTERNAL_BASE_URL } from '../constants'
 import { Environment } from '../environment'
@@ -308,7 +313,11 @@ import { buildMessages } from '../prompt/buildMessages'
 import { buildSystemPrompt } from '../prompt/buildSystemPrompt'
 import { getModelName } from '../prompt/getModelName'
 import { closeAndParseJson } from './closeAndParseJson'
-import { getAgentModelDefinition, getGenerationCostFromUsageAndMetaData, isAgentModelName } from './models'
+import {
+	getAgentModelDefinition,
+	getGenerationCostFromUsageAndMetaData,
+	isAgentModelName,
+} from './models'
 
 export class AgentService {
 	private readonly env: Environment
@@ -351,11 +360,14 @@ export class AgentService {
 		if (cost <= 0) return
 
 		try {
-			const recordRes = await userStub.fetch(`${INTERNAL_BASE_URL}/app/${userId}/fairy/record-usage`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ actualCost: cost }),
-			})
+			const recordRes = await userStub.fetch(
+				`${INTERNAL_BASE_URL}/app/${userId}/fairy/record-usage`,
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ actualCost: cost }),
+				}
+			)
 
 			if (!recordRes.ok) {
 				try {
@@ -376,7 +388,7 @@ export class AgentService {
 		userId: string,
 		userStub: ReturnType<Environment['TL_USER']['get']>
 	): AsyncGenerator<Streaming<AgentAction>> {
-		console.log('[3] AgentService.streamActions() → Preparing LLM call')
+		console.error('[3] AgentService.streamActions() → Preparing LLM call')
 
 		try {
 			const modelName = getModelName(prompt, this.env)
@@ -397,10 +409,14 @@ export class AgentService {
 			// Build the system prompt
 			const systemPrompt = buildSystemPrompt(prompt, { withSchema: true })
 			messages.push({ role: 'system', content: systemPrompt })
+			console.error('[4] AgentService.streamActions() → System prompt:')
+			console.error(JSON.stringify({ systemPrompt }, null, 2))
 
 			// Additional prompt messages (from parts)
 			const promptMessages = buildMessages(prompt)
 			messages.push(...promptMessages)
+			console.error('[5] AgentService.streamActions() → Prompt messages:')
+			console.error(JSON.stringify({ promptMessages }, null, 2))
 
 			// Debug logs
 			const debugPart = prompt.debug as DebugPart | undefined
@@ -421,7 +437,6 @@ export class AgentService {
 				content: '{"actions": [{"_type":',
 			})
 
-			console.log('[6] streamText() → Calling LLM and streaming response')
 			const result = streamText({
 				model,
 				messages,
@@ -446,7 +461,6 @@ export class AgentService {
 			let maybeIncompleteAction: AgentAction | null = null
 
 			let startTime = Date.now()
-			console.log('[7] Parse JSON → Yielding AgentActions to stream to client')
 
 			for await (const text of result.textStream) {
 				if (signal?.aborted) break
@@ -487,7 +501,6 @@ export class AgentService {
 			await result.usage
 		} catch (error: any) {
 			if (signal?.aborted || error?.name === 'AbortError') return
-			console.error('Stream error:', error)
 			throw error
 		}
 	}

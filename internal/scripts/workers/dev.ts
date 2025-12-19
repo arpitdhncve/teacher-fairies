@@ -56,7 +56,14 @@ class MiniflareMonitor {
 		} else if (!err) {
 			console.log(output.replace('[mf:inf]', '')) // or handle the output differently
 		} else {
-			console.error(output.replace('[mf:err]', '')) // or handle the output differently
+			// Worker console.log statements come through stderr but aren't errors
+			// Check if it's a worker log (starts with [number] or common log patterns)
+			const isWorkerLog = /^\[[\d]+\]/.test(output) || output.includes('→')
+			if (isWorkerLog) {
+				console.log(output.replace('[mf:err]', ''))
+			} else {
+				console.error(output.replace('[mf:err]', '')) // Actual errors
+			}
 		}
 	}
 

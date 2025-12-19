@@ -80,13 +80,6 @@ export function getSystemPromptFlags(
 		hasUserActionHistoryPart: parts.includes('userActionHistory'),
 
 		// Tasks
-		hasSoloTasksPart: parts.includes('soloTasks'),
-		hasWorkingTasksPart: parts.includes('workingTasks'),
-
-		// Metadata
-		hasTimePart: parts.includes('time'),
-		hasPagesPart: parts.includes('pages'),
-		hasModePart: parts.includes('mode'),
 		hasDebugPart: parts.includes('debug'),
 
 		// Collaboration
