@@ -1,4 +1,4 @@
-export type AgentModelProvider = 'openai' | 'anthropic' | 'google'
+export type AgentModelProvider = 'openai' | 'anthropic' | 'google' | 'openrouter'
 
 export interface AgentModelDefinition {
 	name: AgentModelName
@@ -16,10 +16,10 @@ export const AGENT_MODEL_DEFINITIONS = {
 		provider: 'google',
 	},
 
-	'claude-sonnet-4-5': {
-		name: 'claude-sonnet-4-5',
-		id: 'claude-sonnet-4-5',
-		provider: 'anthropic',
+	'moonshotai/kimi-k2-thinking': {
+		name: 'moonshotai/kimi-k2-thinking',
+		id: 'moonshotai/kimi-k2-thinking',
+		provider: 'openrouter',
 	},
 
 	'claude-haiku-4-5': {
@@ -37,7 +37,7 @@ export const AGENT_MODEL_DEFINITIONS = {
 
 export type AgentModelName = keyof typeof AGENT_MODEL_DEFINITIONS
 
-const FALLBACK_MODEL_NAME = 'claude-sonnet-4-5' as AgentModelName
+const FALLBACK_MODEL_NAME = 'moonshotai/kimi-k2-thinking' as AgentModelName
 
 function isValidModelName(value: string | undefined): value is AgentModelName {
 	return !!value && value in AGENT_MODEL_DEFINITIONS
@@ -95,7 +95,7 @@ export function getModelPricingInfo(
 					outputPrice: 18,
 				}
 			}
-		case 'claude-sonnet-4-5':
+		case 'moonshotai/kimi-k2-thinking':
 			if (inputTokens <= TIER_THRESHOLD) {
 				return {
 					uncachedInputPrice: 3,

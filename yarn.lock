@@ -5163,6 +5163,27 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@openrouter/ai-sdk-provider@npm:^1.5.4":
+  version: 1.5.4
+  resolution: "@openrouter/ai-sdk-provider@npm:1.5.4"
+  dependencies:
+    "@openrouter/sdk": "npm:^0.1.27"
+  peerDependencies:
+    ai: ^5.0.0
+    zod: ^3.24.1 || ^v4
+  checksum: 10/570242d20036cf9743ef788ed35de47bc01079a8811aa8778220f8186db1d9f02198e2b90bedc07e3fcffa85933a77c7cebf029e6dac6a5a51a763d9daddabe2
+  languageName: node
+  linkType: hard
+
+"@openrouter/sdk@npm:^0.1.27":
+  version: 0.1.27
+  resolution: "@openrouter/sdk@npm:0.1.27"
+  dependencies:
+    zod: "npm:^3.25.0 || ^4.0.0"
+  checksum: 10/0de7f4ee275d2ac0ade2be33bde0efd40fd3ce267f87668e251b3ba90c1fc3dc5dcb6aaffa2bdd946e9ec1c465f2823ca7f93db5edeb0cfe41032260bcc11ab8
+  languageName: node
+  linkType: hard
+
 "@opentelemetry/api-logs@npm:0.200.0, @opentelemetry/api-logs@npm:^0.200.0":
   version: 0.200.0
   resolution: "@opentelemetry/api-logs@npm:0.200.0"
@@ -9697,6 +9718,7 @@ __metadata:
     "@lingual/i18n-check": "npm:^0.5.5"
     "@microsoft/api-extractor": "npm:^7.55.2"
     "@next/eslint-plugin-next": "npm:^15.1.6"
+    "@openrouter/ai-sdk-provider": "npm:^1.5.4"
     "@sentry/cli": "npm:^2.41.1"
     "@swc/core": "npm:^1.10.11"
     "@types/aws-lambda": "npm:8.10.148"
@@ -30756,6 +30778,13 @@ __metadata:
   version: 3.25.67
   resolution: "zod@npm:3.25.67"
   checksum: 10/0e35432dcca7f053e63f5dd491a87c78abe0d981817547252c3b6d05f0f58788695d1a69724759c6501dff3fd62929be24c9f314a3625179bee889150f7a61fa
+  languageName: node
+  linkType: hard
+
+"zod@npm:^3.25.0 || ^4.0.0":
+  version: 4.2.1
+  resolution: "zod@npm:4.2.1"
+  checksum: 10/f21d106ce31e0f24040aa13b13fdd1300fcc8119622b28ca1b1b726ff70b75190dbcfeb927d34f19174683afa298e5df4d806f622abe9b037a0aadb9cdef6443
   languageName: node
   linkType: hard
 
