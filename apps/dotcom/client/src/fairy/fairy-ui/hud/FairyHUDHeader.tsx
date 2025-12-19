@@ -1,5 +1,5 @@
 import { ActivityIcon } from '@tldraw/fairy-shared'
-import { ReactNode, useCallback } from 'react'
+import { ReactNode, useCallback, useRef } from 'react'
 import {
 	TldrawUiButton,
 	TldrawUiButtonIcon,
@@ -69,12 +69,18 @@ export function FairyHUDHeader({
 	)
 
 	const editor = useEditor()
+	const previousMenuStateRef = useRef<boolean | undefined>(undefined)
 
 	useReactor(
 		'fairy-hud-menu',
 		() => {
 			const menuIsOpen = editor.menus.isMenuOpen('fairy-hud-menu')
-			onMenuPopoverOpenChange(menuIsOpen)
+			// Only call onMenuPopoverOpenChange when the state actually changes
+			// This prevents infinite loops during streaming when components re-render frequently
+			if (previousMenuStateRef.current !== menuIsOpen) {
+				previousMenuStateRef.current = menuIsOpen
+				onMenuPopoverOpenChange(menuIsOpen)
+			}
 		},
 		[editor, onMenuPopoverOpenChange]
 	)
