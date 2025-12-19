@@ -27,6 +27,7 @@ export function buildSystemPrompt(
 		withSchema: boolean
 	}
 ): string {
+	console.log('[4] buildSystemPrompt() → Creating system instructions')
 	const { withSchema = false } = opts
 
 	const modePart = prompt.mode

@@ -2,6 +2,7 @@ import { Environment } from '../environment'
 import { AuthenticatedRequest } from '../worker'
 
 export async function streamActionsHandler(request: AuthenticatedRequest, env: Environment) {
+	console.log('[1] streamActionsHandler() → User:', request.auth?.userId)
 	// Auth is already validated and attached by requireTldrawEmail middleware
 	const auth = request.auth
 

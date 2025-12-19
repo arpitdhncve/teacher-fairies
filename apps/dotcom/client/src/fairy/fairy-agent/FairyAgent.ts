@@ -729,6 +729,7 @@ export class FairyAgent {
 			}
 		}
 
+		console.log(FAIRY_WORKER)
 		const res = await fetch(`${FAIRY_WORKER}/stream-actions`, {
 			method: 'POST',
 			body: JSON.stringify(prompt),

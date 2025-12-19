@@ -9,6 +9,7 @@ import {
 import { ModelMessage, UserContent } from 'ai'
 
 export function buildMessages(prompt: AgentPrompt): ModelMessage[] {
+	console.log('[5] buildMessages() → Creating user messages')
 	const allMessages: AgentMessage[] = []
 
 	for (const part of Object.values(prompt)) {

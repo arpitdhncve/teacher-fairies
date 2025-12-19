@@ -72,6 +72,7 @@ export class AgentDurableObject extends DurableObject<Environment> {
 	 * Stream actions from the model.
 	 */
 	private async streamActions(request: Request): Promise<Response> {
+		console.log('[2] AgentDurableObject.streamActions() → Setting up SSE stream')
 		// Get auth from headers (already validated by worker)
 		const userId = request.headers.get('X-User-Id')
 		const userIsAdmin = request.headers.get('X-Is-Admin') === 'true'

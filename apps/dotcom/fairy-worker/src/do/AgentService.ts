@@ -90,6 +90,7 @@ export class AgentService {
 		userId: string,
 		userStub: ReturnType<Environment['TL_USER']['get']>
 	): AsyncGenerator<Streaming<AgentAction>> {
+		console.log('[3] AgentService.streamActions() → Preparing LLM call')
 		try {
 			const modelName = getModelName(prompt, this.env)
 			const model = this.getModel(modelName)
@@ -164,6 +165,7 @@ export class AgentService {
 
 			const gptThinkingBudget = modelId === 'gpt-5.1' ? 'none' : 'minimal'
 
+			console.log('[6] streamText() → Calling LLM and streaming response')
 			const result = streamText({
 				model,
 				messages,
@@ -200,6 +202,7 @@ export class AgentService {
 			let maybeIncompleteAction: AgentAction | null = null
 
 			let startTime = Date.now()
+			console.log('[7] Parse JSON → Yielding AgentActions to stream to client')
 			for await (const text of result.textStream) {
 				if (signal?.aborted) break
 				buffer += text

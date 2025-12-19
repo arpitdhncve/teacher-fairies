@@ -264,17 +264,32 @@ export function createMutators(userId: string) {
 				await tx.mutate.user.update(user)
 			},
 			updateFairyConfig: async (tx, { id, properties }: { id: string; properties: object }) => {
-				const current = await tx.query.user_fairies.where('userId', '=', userId).one().run()
-				assert(current, ZErrorCode.forbidden) // Must have user_fairies row
+				// Get or create user_fairies row
+				let current = await tx.query.user_fairies.where('userId', '=', userId).one().run()
+
+				// If no user_fairies row exists, create one with default access for all users
+				if (!current) {
+					const oneYearFromNow = Date.now() + 365 * 24 * 60 * 60 * 1000
+					await tx.mutate.user_fairies.insert({
+						userId,
+						fairies: '{}',
+						fairyLimit: MAX_FAIRY_COUNT,
+						fairyAccessExpiresAt: oneYearFromNow,
+						weeklyUsage: '{}',
+					})
+					current = await tx.query.user_fairies.where('userId', '=', userId).one().run()
+				}
+
 				const currentConfig = JSON.parse(current?.fairies || '{}')
 				const isNewFairy = !currentConfig[id]
 
+				// Check fairy count limit (no longer checking expiration/access)
 				if (isNewFairy) {
-					await assertBelowFairyLimit(tx, userId)
-				} else {
-					const { hasAccess } = await getUserFairyAccess(tx, userId)
-					assert(hasAccess, ZErrorCode.forbidden)
+					const count = Object.values(currentConfig).filter(Boolean).length
+					const effectiveLimit = Math.min(current?.fairyLimit ?? MAX_FAIRY_COUNT, MAX_FAIRY_COUNT)
+					assert(count < effectiveLimit, ZErrorCode.forbidden)
 				}
+
 				await tx.mutate.user_fairies.update({
 					userId,
 					fairies: JSON.stringify({
@@ -287,11 +302,9 @@ export function createMutators(userId: string) {
 				})
 			},
 			deleteFairyConfig: async (tx, { id }: { id: string }) => {
-				const { hasAccess } = await getUserFairyAccess(tx, userId)
-				assert(hasAccess, ZErrorCode.forbidden)
-
 				const current = await tx.query.user_fairies.where('userId', '=', userId).one().run()
-				assert(current, ZErrorCode.forbidden) // Must have user_fairies row
+				if (!current) return // Nothing to delete
+
 				const currentConfig = JSON.parse(current?.fairies || '{}')
 				await tx.mutate.user_fairies.update({
 					userId,
@@ -299,11 +312,9 @@ export function createMutators(userId: string) {
 				})
 			},
 			deleteAllFairyConfigs: async (tx) => {
-				const { hasAccess } = await getUserFairyAccess(tx, userId)
-				assert(hasAccess, ZErrorCode.forbidden)
-
 				const current = await tx.query.user_fairies.where('userId', '=', userId).one().run()
-				assert(current, ZErrorCode.forbidden) // Must have user_fairies row
+				if (!current) return // Nothing to delete
+
 				await tx.mutate.user_fairies.update({ userId, fairies: '{}' })
 			},
 		},
