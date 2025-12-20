@@ -38,6 +38,8 @@ export const cspDirectives: { [key: string]: string[] } = {
 		'https://*.paddle.com',
 		// profitwell (loaded by paddle)
 		'https://public.profitwell.com',
+		// LiveKit backend
+		'http://localhost:3001',
 	],
 	'font-src': [`'self'`, `https://fonts.googleapis.com`, `https://fonts.gstatic.com`, 'data:'],
 	'frame-src': [

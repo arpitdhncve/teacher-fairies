@@ -108,6 +108,7 @@ interface TlaEditorProps {
 	fileSlug: string
 	isEmbed?: boolean
 	deepLinks?: boolean
+	onLeaderAgentChange?: (agent: any | null) => void
 }
 
 export function TlaEditor(props: TlaEditorProps) {
@@ -122,7 +123,7 @@ export function TlaEditor(props: TlaEditorProps) {
 	)
 }
 
-function TlaEditorInner({ fileSlug, deepLinks }: TlaEditorProps) {
+function TlaEditorInner({ fileSlug, deepLinks, onLeaderAgentChange }: TlaEditorProps) {
 	const handleUiEvent = useHandleUiEvents()
 	const app = useMaybeApp()
 
@@ -261,6 +262,26 @@ function TlaEditorInner({ fileSlug, deepLinks }: TlaEditorProps) {
 	const handleUnmount = useCallback(() => {
 		setHoistedFairyApp(null)
 	}, [])
+
+	// Compute leader agent reactively - this will update when agents are synced
+	const leaderAgent = useValue(
+		'leader-agent-from-editor',
+		() => {
+			if (!hoistedFairyApp) return null
+			// By calling getAgents() here, we're reading from the $agents atom
+			// which makes this reactive to changes in the agents list
+			const agents = hoistedFairyApp.agents.getAgents()
+			return agents[0] ?? null
+		},
+		[hoistedFairyApp]
+	)
+
+	// Notify parent when leader agent changes
+	useEffect(() => {
+		if (onLeaderAgentChange) {
+			onLeaderAgentChange(leaderAgent)
+		}
+	}, [leaderAgent, onLeaderAgentChange])
 
 	// we need to prevent calling onFileExit if the store is in an error state
 	const storeError = useRef(false)
@@ -402,13 +423,14 @@ function TlaEditorInner({ fileSlug, deepLinks }: TlaEditorProps) {
 				deepLinks={deepLinks || undefined}
 				overrides={[overrides, extraDragIconOverrides]}
 				getShapeVisibility={getShapeVisibility}
+				hideUi={true}
 			>
 				<ThemeUpdater />
 				<SneakyDarkModeSync />
 				<SneakyToolSwitcher />
 				{app && <SneakyTldrawFileDropHandler />}
 				<SneakyLargeFileHander />
-				{app && hasFairyAccess && areFairiesEnabled && (
+				{app && (
 					<Suspense fallback={null}>
 						<FairyAppProvider
 							fileId={fileId}

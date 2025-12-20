@@ -7,6 +7,7 @@ import {
 	BaseAgentPrompt,
 	ChatHistoryItem,
 	ChatHistoryPromptItem,
+	convertTldrawShapeToFocusedShape,
 	FAIRY_VISION_DIMENSIONS,
 	FairyConfig,
 	FairyEntity,
@@ -16,6 +17,7 @@ import {
 	FairyTask,
 	FairyTodoItem,
 	FairyWork,
+	FocusedShape,
 	getFairyModeDefinition,
 	PromptPart,
 	Streaming,
@@ -983,5 +985,109 @@ export class FairyAgent {
 		}
 
 		return { promise: requestPromise, cancel }
+	}
+
+	async snapshotCanvas(): Promise<string> {
+		console.log('🔄 Starting canvas snapshot process...')
+		const { editor } = this
+
+		const viewportBounds = editor.getViewportPageBounds()
+		const maxXValue = viewportBounds ? viewportBounds.x + viewportBounds.w : 0
+		const maxYValue = viewportBounds ? viewportBounds.y + viewportBounds.h : 0
+
+		const currentPageId = editor.getCurrentPageId()
+		const shapeIds = Array.from(editor.getCurrentPageShapeIds())
+		const shapes = editor.getCurrentPageShapes()
+
+		const helpers = new AgentHelpers(this)
+
+		console.log('📊 Processing shapes data...')
+		const simpleShapes: FocusedShape[] = shapes.map((s) =>
+			convertTldrawShapeToFocusedShape(editor, s)
+		)
+
+		const normalizedShapes = simpleShapes.map((s) =>
+			helpers.roundShape(helpers.applyOffsetToShape(s))
+		)
+
+		console.log(`📸 Generating image for ${shapeIds.length} shapes...`)
+		let imageDataUrl: string | null = null
+
+		if (shapeIds.length > 0) {
+			const viewportBounds = editor.getViewportPageBounds()
+			try {
+				const { blob } = await editor.toImage(shapeIds, {
+					format: 'png',
+					background: true,
+					scale: 2,
+					padding: 0,
+					...(viewportBounds ? { bounds: viewportBounds } : {}),
+				})
+
+				imageDataUrl = await new Promise<string>((resolve, reject) => {
+					const fr = new FileReader()
+					fr.onload = () => resolve(fr.result as string)
+					fr.onerror = () => reject(fr.error ?? new Error('Failed to read image'))
+					fr.readAsDataURL(blob)
+				})
+			} catch (e) {
+				const msg = e instanceof Error ? e.message : String(e)
+				console.warn(
+					`snapshotCanvas(): render failed for page ${currentPageId}, sending null image. ${msg}`
+				)
+				imageDataUrl = null
+			}
+		}
+
+		const pageName = 'Current Page'
+
+		console.log('🌐 Calling backend API to save snapshot...')
+		const resp = await fetch('http://localhost:3001/snapshot-canvas', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				current_editor: {
+					page_id: currentPageId,
+					name: pageName,
+					image: imageDataUrl,
+				},
+				current_editor_shapes: normalizedShapes,
+				max_x_value: maxXValue,
+				max_y_value: maxYValue,
+			}),
+		})
+
+		console.log(`📡 Backend response status: ${resp.status}`)
+		if (!resp.ok) {
+			throw new Error(`API ${resp.status} ${resp.statusText}`)
+		}
+
+		const data = (await resp.json()) as { status: string; uuid: string }
+		if (!data?.uuid) {
+			throw new Error('MISSING_UUID_IN_RESPONSE')
+		}
+
+		console.log('📤 Snapshot UUID received:', data.uuid)
+		console.log('✅ Canvas snapshot process completed')
+		return data.uuid
+	}
+
+	/**
+	 * Draw from a LiveKit instruction.
+	 * This method is used to handle drawing instructions from LiveKit voice/chat interactions.
+	 *
+	 * @param instruction - The instruction text to execute
+	 * @returns A promise that resolves when the drawing is complete
+	 */
+	async drawFromLiveKitInstruction(instruction: string) {
+		if (!this.editor) {
+			throw new Error('Editor not ready')
+		}
+
+		// Use the existing prompt method with the instruction and current viewport bounds
+		await this.prompt({
+			message: instruction,
+			bounds: this.editor.getViewportPageBounds(),
+		})
 	}
 }
