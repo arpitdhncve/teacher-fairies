@@ -21,6 +21,7 @@ import {
 	getFairyModeDefinition,
 	PromptPart,
 	Streaming,
+	toProjectId,
 } from '@tldraw/fairy-shared'
 import {
 	Atom,
@@ -1073,21 +1074,73 @@ export class FairyAgent {
 	}
 
 	/**
-	 * Draw from a LiveKit instruction.
-	 * This method is used to handle drawing instructions from LiveKit voice/chat interactions.
+	 * Draw from a LiveKit instruction using orchestration mode.
+	 * This method is called when the leader fairy receives a drawing instruction from LiveKit.
+	 *
+	 * The leader will:
+	 * 1. Create a project (if not already in one) with itself as orchestrator
+	 * 2. Receive the instruction and plan the work
+	 * 3. Delegate tasks to follower fairies using the orchestration system
 	 *
 	 * @param instruction - The instruction text to execute
-	 * @returns A promise that resolves when the drawing is complete
+	 * @returns A promise that resolves when the orchestration is complete
 	 */
 	async drawFromLiveKitInstruction(instruction: string) {
 		if (!this.editor) {
 			throw new Error('Editor not ready')
 		}
 
-		// Use the existing prompt method with the instruction and current viewport bounds
+		console.log(`[FairyAgent ${this.id}] Received LiveKit instruction: "${instruction}"`)
+
+		const currentProject = this.getProject()
+		const bounds = this.editor.getViewportPageBounds()
+
+		// If not in a project, create one with this agent as orchestrator
+		if (!currentProject) {
+			console.log(
+				`[FairyAgent ${this.id}] No active project, creating new project for orchestration`
+			)
+
+			const allAgents = this.fairyApp.agents.getAgents()
+			const followers = allAgents.filter((a) => a.id !== this.id)
+
+			console.log(`[FairyAgent ${this.id}] Creating project with ${followers.length} followers`)
+
+			// Create the project
+			const projectId = toProjectId(uniqueId())
+			const project: FairyProject = {
+				id: projectId,
+				title: 'LiveKit Drawing',
+				description: instruction,
+				color: 'blue',
+				members: [
+					{ id: this.id, role: 'orchestrator' },
+					...followers.map((f) => ({ id: f.id, role: 'drone' as const })),
+				],
+				plan: '',
+				softDeleted: false,
+			}
+
+			this.fairyApp.projects.addProject(project)
+			console.log(`[FairyAgent ${this.id}] Project created: ${projectId}`)
+
+			// Set mode to orchestrating
+			this.mode.setMode('orchestrating-active')
+			console.log(`[FairyAgent ${this.id}] Mode set to orchestrating-active`)
+		} else {
+			console.log(
+				`[FairyAgent ${this.id}] Already in project ${currentProject.id}, continuing orchestration`
+			)
+		}
+
+		// Now prompt with the instruction
+		// The orchestration mode will handle creating tasks and delegating to followers
+		console.log(`[FairyAgent ${this.id}] Prompting with instruction in orchestration mode`)
 		await this.prompt({
 			message: instruction,
-			bounds: this.editor.getViewportPageBounds(),
+			bounds,
 		})
+
+		console.log(`[FairyAgent ${this.id}] LiveKit instruction orchestration complete`)
 	}
 }

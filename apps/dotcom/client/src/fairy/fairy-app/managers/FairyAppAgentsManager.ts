@@ -75,12 +75,27 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 
 		const existingIds = new Set(existingAgents.map((a) => a.id))
 
-		// Create a new fairy if we're below max count
-		if (configIds.length < MAX_FAIRY_COUNT) {
-			console.log('[FairyAppAgentsManager] Creating new fairy config (below max count)')
-			const id = this.createNewFairyConfig()
-			configIds.push(id)
-			console.log('[FairyAppAgentsManager] New fairy config created with id:', id)
+		// Create fairies until we have exactly MAX_FAIRY_COUNT (3)
+		// Each fairy gets a fixed index (0 = leader, 1 = second, 2 = third)
+		// We need to ensure fairies are created with consistent indices
+		const currentFairyCount = configIds.length
+		if (currentFairyCount < MAX_FAIRY_COUNT) {
+			const numToCreate = MAX_FAIRY_COUNT - currentFairyCount
+			console.log(
+				`[FairyAppAgentsManager] Creating ${numToCreate} new fairy config(s) to reach ${MAX_FAIRY_COUNT}`
+			)
+
+			// Create fairies with indices based on their final position
+			// If we have 0 fairies, create indices 0, 1, 2
+			// If we have 1 fairy, create indices 1, 2
+			// If we have 2 fairies, create index 2
+			for (let i = 0; i < numToCreate; i++) {
+				const fairyIndex = currentFairyCount + i
+				console.log(`[FairyAppAgentsManager] Creating fairy at index ${fairyIndex}`)
+				const id = this.createNewFairyConfig(fairyIndex)
+				configIds.push(id)
+				console.log('[FairyAppAgentsManager] New fairy config created with id:', id)
+			}
 		}
 
 		this.migrateFairyConfigs(fairyConfigs)
@@ -127,8 +142,10 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 	/**
 	 * Create a new fairy configuration and add it to the user's settings.
 	 * Returns the ID of the new fairy.
+	 *
+	 * @param index - Optional index for fixed fairy names (0 = leader, 1 = second, 2 = third)
 	 */
-	createNewFairyConfig() {
+	createNewFairyConfig(index?: number) {
 		const randomOutfit = {
 			body: Object.keys(FAIRY_VARIANTS.body)[
 				Math.floor(Math.random() * Object.keys(FAIRY_VARIANTS.body).length)
@@ -144,7 +161,7 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 		const id = toAgentId(uniqueId())
 
 		const config: FairyConfig = {
-			name: getRandomFairyName(),
+			name: getRandomFairyName(0, index), // Use fixed name if index is provided
 			outfit: randomOutfit,
 			sign: getRandomFairySign(),
 			hat: getRandomFairyHat(),

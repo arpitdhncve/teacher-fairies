@@ -379,7 +379,8 @@ function TlaEditorInner({ fileSlug, deepLinks, onLeaderAgentChange }: TlaEditorP
 			InFrontOfTheCanvas: () => {
 				return (
 					<>
-						{shouldShowFairyUI && hoistedFairyApp ? (
+						{/* Commented out to hide fairy chatbox and widget sidebar */}
+						{/* {shouldShowFairyUI && hoistedFairyApp ? (
 							<Suspense fallback={<div />}>
 								<FairyAppContextProvider fairyApp={hoistedFairyApp}>
 									{canControlFairies ? <FairyHUD /> : <FairyHUDTeaser />}
@@ -391,7 +392,7 @@ function TlaEditorInner({ fileSlug, deepLinks, onLeaderAgentChange }: TlaEditorP
 									<FairyHUDTeaser />
 								</Suspense>
 							)
-						)}
+						)} */}
 					</>
 				)
 			},

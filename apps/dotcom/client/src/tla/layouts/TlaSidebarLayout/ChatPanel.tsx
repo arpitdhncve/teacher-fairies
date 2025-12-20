@@ -1005,8 +1005,9 @@ function DataHandler({ agent, onUi }: { agent: FairyAgent; onUi: (m: ChatMsg) =>
 				return
 			}
 
-			// --- DRAW (optional) ---
-			// Keep this only if your FairyAgent supports it.
+			// --- DRAW: Send instruction to LEADER ONLY (orchestration mode) ---
+			// The leader (index 0 - Alice Sparklewind) will receive the instruction,
+			// create a project, and delegate tasks to followers (Bob & Charlie)
 			if (topic === 'draw.request') {
 				const payloadText = new TextDecoder().decode(payload)
 				let decoded: any
@@ -1039,14 +1040,42 @@ function DataHandler({ agent, onUi }: { agent: FairyAgent; onUi: (m: ChatMsg) =>
 					return
 				}
 
-				const fn = (agent as any)?.drawFromLiveKitInstruction
-				if (typeof fn !== 'function') {
+				// Get all fairies from the FairyApp
+				const fairyApp = (agent as any)?.fairyApp
+				const allAgents = fairyApp?.agents?.getAgents() || [agent]
+
+				if (allAgents.length === 0) {
 					room.localParticipant.publishData(
 						new TextEncoder().encode(
 							JSON.stringify({
 								request_id,
 								ok: false,
-								error: 'FairyAgent.drawFromLiveKitInstruction is not implemented',
+								error: 'No fairies available',
+							})
+						),
+						{ topic: 'draw.response' }
+					)
+					return
+				}
+
+				// Get the LEADER fairy (always index 0 - Alice Sparklewind)
+				const leaderAgent = allAgents[0]
+				const leaderName = leaderAgent?.getConfig?.()?.name || 'Leader'
+
+				console.log(
+					`[ChatPanel] Sending draw instruction to LEADER: ${leaderName} (will orchestrate and delegate)`
+				)
+				console.log(`[ChatPanel] Instruction: "${instruction}"`)
+				console.log(`[ChatPanel] Available followers: ${allAgents.length - 1}`)
+
+				// Verify leader has the drawFromLiveKitInstruction method
+				if (typeof leaderAgent?.drawFromLiveKitInstruction !== 'function') {
+					room.localParticipant.publishData(
+						new TextEncoder().encode(
+							JSON.stringify({
+								request_id,
+								ok: false,
+								error: 'Leader fairy does not have drawFromLiveKitInstruction method',
 							})
 						),
 						{ topic: 'draw.response' }
@@ -1055,12 +1084,21 @@ function DataHandler({ agent, onUi }: { agent: FairyAgent; onUi: (m: ChatMsg) =>
 				}
 
 				try {
-					await fn.call(agent, instruction)
+					// Send instruction ONLY to the leader
+					// The leader will use orchestration mode to:
+					// 1. Create a project (if not already in one)
+					// 2. Plan the work and create tasks
+					// 3. Delegate tasks to follower fairies (Bob & Charlie)
+					console.log(`[ChatPanel] Leader ${leaderName} executing instruction...`)
+					await leaderAgent.drawFromLiveKitInstruction(instruction)
+
+					console.log('[ChatPanel] Leader completed orchestration')
 					room.localParticipant.publishData(
 						new TextEncoder().encode(JSON.stringify({ request_id, ok: true })),
 						{ topic: 'draw.response' }
 					)
 				} catch (err: any) {
+					console.error('[ChatPanel] Error executing draw instruction:', err)
 					room.localParticipant.publishData(
 						new TextEncoder().encode(
 							JSON.stringify({
