@@ -16,9 +16,9 @@ export const AGENT_MODEL_DEFINITIONS = {
 		provider: 'google',
 	},
 
-	'anthropic/claude-haiku-4.5': {
-		name: 'anthropic/claude-haiku-4.5',
-		id: 'anthropic/claude-haiku-4.5',
+	'google/gemini-3-flash-preview': {
+		name: 'google/gemini-3-flash-preview',
+		id: 'google/gemini-3-flash-preview',
 		provider: 'openrouter',
 	},
 
@@ -37,7 +37,7 @@ export const AGENT_MODEL_DEFINITIONS = {
 
 export type AgentModelName = keyof typeof AGENT_MODEL_DEFINITIONS
 
-const FALLBACK_MODEL_NAME = 'anthropic/claude-haiku-4.5' as AgentModelName
+const FALLBACK_MODEL_NAME = 'google/gemini-3-flash-preview' as AgentModelName
 
 function isValidModelName(value: string | undefined): value is AgentModelName {
 	return !!value && value in AGENT_MODEL_DEFINITIONS
@@ -95,7 +95,7 @@ export function getModelPricingInfo(
 					outputPrice: 18,
 				}
 			}
-		case 'anthropic/claude-haiku-4.5':
+		case 'google/gemini-3-flash-preview':
 			if (inputTokens <= TIER_THRESHOLD) {
 				return {
 					uncachedInputPrice: 3,
