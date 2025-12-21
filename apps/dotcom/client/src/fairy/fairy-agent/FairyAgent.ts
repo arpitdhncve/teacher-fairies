@@ -21,7 +21,6 @@ import {
 	getFairyModeDefinition,
 	PromptPart,
 	Streaming,
-	toProjectId,
 } from '@tldraw/fairy-shared'
 import {
 	Atom,
@@ -1089,58 +1088,10 @@ export class FairyAgent {
 		if (!this.editor) {
 			throw new Error('Editor not ready')
 		}
-
-		console.log(`[FairyAgent ${this.id}] Received LiveKit instruction: "${instruction}"`)
-
-		const currentProject = this.getProject()
 		const bounds = this.editor.getViewportPageBounds()
-
-		// If not in a project, create one with this agent as orchestrator
-		if (!currentProject) {
-			console.log(
-				`[FairyAgent ${this.id}] No active project, creating new project for orchestration`
-			)
-
-			const allAgents = this.fairyApp.agents.getAgents()
-			const followers = allAgents.filter((a) => a.id !== this.id)
-
-			console.log(`[FairyAgent ${this.id}] Creating project with ${followers.length} followers`)
-
-			// Create the project
-			const projectId = toProjectId(uniqueId())
-			const project: FairyProject = {
-				id: projectId,
-				title: 'LiveKit Drawing',
-				description: instruction,
-				color: 'blue',
-				members: [
-					{ id: this.id, role: 'orchestrator' },
-					...followers.map((f) => ({ id: f.id, role: 'drone' as const })),
-				],
-				plan: '',
-				softDeleted: false,
-			}
-
-			this.fairyApp.projects.addProject(project)
-			console.log(`[FairyAgent ${this.id}] Project created: ${projectId}`)
-
-			// Set mode to orchestrating
-			this.mode.setMode('orchestrating-active')
-			console.log(`[FairyAgent ${this.id}] Mode set to orchestrating-active`)
-		} else {
-			console.log(
-				`[FairyAgent ${this.id}] Already in project ${currentProject.id}, continuing orchestration`
-			)
-		}
-
-		// Now prompt with the instruction
-		// The orchestration mode will handle creating tasks and delegating to followers
-		console.log(`[FairyAgent ${this.id}] Prompting with instruction in orchestration mode`)
 		await this.prompt({
 			message: instruction,
 			bounds,
 		})
-
-		console.log(`[FairyAgent ${this.id}] LiveKit instruction orchestration complete`)
 	}
 }

@@ -38,8 +38,6 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 	 */
 	getAgents(): FairyAgent[] {
 		const agents = this.$agents.get()
-		console.log('[FairyAppAgentsManager] getAgents() called, returning:', agents)
-		console.log('[FairyAppAgentsManager] getAgents() count:', agents.length)
 		return agents
 	}
 
@@ -64,14 +62,9 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 			getToken(): Promise<string | undefined>
 		}
 	) {
-		console.log('[FairyAppAgentsManager] syncAgentsWithConfigs called')
-		console.log('[FairyAppAgentsManager] fairyConfigs:', fairyConfigs)
-
 		const configIds = Object.keys(fairyConfigs) as AgentId[]
-		console.log('[FairyAppAgentsManager] configIds:', configIds)
 
 		const existingAgents = this.$agents.get()
-		console.log('[FairyAppAgentsManager] existingAgents:', existingAgents)
 
 		const existingIds = new Set(existingAgents.map((a) => a.id))
 
@@ -81,9 +74,6 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 		const currentFairyCount = configIds.length
 		if (currentFairyCount < MAX_FAIRY_COUNT) {
 			const numToCreate = MAX_FAIRY_COUNT - currentFairyCount
-			console.log(
-				`[FairyAppAgentsManager] Creating ${numToCreate} new fairy config(s) to reach ${MAX_FAIRY_COUNT}`
-			)
 
 			// Create fairies with indices based on their final position
 			// If we have 0 fairies, create indices 0, 1, 2
@@ -91,10 +81,8 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 			// If we have 2 fairies, create index 2
 			for (let i = 0; i < numToCreate; i++) {
 				const fairyIndex = currentFairyCount + i
-				console.log(`[FairyAppAgentsManager] Creating fairy at index ${fairyIndex}`)
 				const id = this.createNewFairyConfig(fairyIndex)
 				configIds.push(id)
-				console.log('[FairyAppAgentsManager] New fairy config created with id:', id)
 			}
 		}
 
@@ -102,12 +90,10 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 
 		// Find agents to create (new configs that don't have agents yet)
 		const idsToCreate = configIds.filter((id) => !existingIds.has(id))
-		console.log('[FairyAppAgentsManager] idsToCreate:', idsToCreate)
 
 		// Find agents to dispose (agents that no longer have configs)
 		const configIdsSet = new Set(configIds)
 		const agentsToDispose = existingAgents.filter((agent) => !configIdsSet.has(agent.id))
-		console.log('[FairyAppAgentsManager] agentsToDispose:', agentsToDispose)
 
 		// Dispose removed agents and clean up tracking
 		agentsToDispose.forEach((agent) => {
@@ -117,7 +103,6 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 
 		// Create new agents
 		const newAgents = idsToCreate.map((id) => {
-			console.log('[FairyAppAgentsManager] Creating new FairyAgent with id:', id)
 			return new FairyAgent({
 				id,
 				fairyApp: this.fairyApp,
@@ -126,15 +111,12 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 				getToken: options.getToken,
 			})
 		})
-		console.log('[FairyAppAgentsManager] newAgents created:', newAgents)
 
 		// Keep existing agents that are still in config, add new ones
 		const updatedAgents = [
 			...existingAgents.filter((agent) => configIdsSet.has(agent.id)),
 			...newAgents,
 		]
-		console.log('[FairyAppAgentsManager] updatedAgents:', updatedAgents)
-		console.log('[FairyAppAgentsManager] Setting agents atom with', updatedAgents.length, 'agents')
 
 		this.$agents.set(updatedAgents)
 	}

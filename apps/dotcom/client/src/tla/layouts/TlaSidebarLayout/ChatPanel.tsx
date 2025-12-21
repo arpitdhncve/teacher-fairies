@@ -404,13 +404,6 @@ function DataHandler({ agent, onUi }: { agent: FairyAgent; onUi: (m: ChatMsg) =>
 
 				// Get the LEADER fairy (always index 0 - Alice Sparklewind)
 				const leaderAgent = allAgents[0]
-				const leaderName = leaderAgent?.getConfig?.()?.name || 'Leader'
-
-				console.log(
-					`[ChatPanel] Sending draw instruction to LEADER: ${leaderName} (will orchestrate and delegate)`
-				)
-				console.log(`[ChatPanel] Instruction: "${instruction}"`)
-				console.log(`[ChatPanel] Available followers: ${allAgents.length - 1}`)
 
 				// Verify leader has the drawFromLiveKitInstruction method
 				if (typeof leaderAgent?.drawFromLiveKitInstruction !== 'function') {
@@ -433,10 +426,8 @@ function DataHandler({ agent, onUi }: { agent: FairyAgent; onUi: (m: ChatMsg) =>
 					// 1. Create a project (if not already in one)
 					// 2. Plan the work and create tasks
 					// 3. Delegate tasks to follower fairies (Bob & Charlie)
-					console.log(`[ChatPanel] Leader ${leaderName} executing instruction...`)
 					await leaderAgent.drawFromLiveKitInstruction(instruction)
 
-					console.log('[ChatPanel] Leader completed orchestration')
 					room.localParticipant.publishData(
 						new TextEncoder().encode(JSON.stringify({ request_id, ok: true })),
 						{ topic: 'draw.response' }
