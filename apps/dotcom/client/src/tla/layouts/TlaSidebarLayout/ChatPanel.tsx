@@ -65,6 +65,15 @@ function MicPushToTalk({ hotkey = 'Space' }: { hotkey?: string }) {
 		[localParticipant]
 	)
 
+	// Ensure microphone is muted on initial connection
+	useEffect(() => {
+		if (!localParticipant) return
+		if (connection !== ConnectionState.Connected) return
+
+		// Mute the microphone when first connected
+		setMic(false)
+	}, [localParticipant, connection, setMic])
+
 	useEffect(() => {
 		if (!localParticipant) return
 		if (connection !== ConnectionState.Connected) return
@@ -548,7 +557,7 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 			}
 
 			setLkToken(tokenToUse)
-			setLkUrl('wss://qwertytrewq-ypzbcoyv.livekit.cloud')
+			setLkUrl('wss://asdfgh-efschaun.livekit.cloud')
 			setLkConnect(true)
 		} catch {
 			setError('Failed to start learning session')
