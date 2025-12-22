@@ -68,8 +68,8 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 
 		const existingIds = new Set(existingAgents.map((a) => a.id))
 
-		// Create fairies until we have exactly MAX_FAIRY_COUNT (3)
-		// Each fairy gets a fixed index (0 = leader, 1 = second, 2 = third)
+		// Create fairies until we have exactly MAX_FAIRY_COUNT (2)
+		// Each fairy gets a fixed index (0 = leader, 1 = follower)
 		// We need to ensure fairies are created with consistent indices
 		const currentFairyCount = configIds.length
 		if (currentFairyCount < MAX_FAIRY_COUNT) {
@@ -84,6 +84,15 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 				const id = this.createNewFairyConfig(fairyIndex)
 				configIds.push(id)
 			}
+		} else if (currentFairyCount > MAX_FAIRY_COUNT) {
+			// Remove excess fairy configurations
+			// Keep only the first MAX_FAIRY_COUNT fairies
+			const excessIds = configIds.slice(MAX_FAIRY_COUNT)
+			excessIds.forEach((id) => {
+				this.fairyApp.tldrawApp.z.mutate.user.deleteFairyConfig({ id })
+			})
+			// Update configIds to only include the kept fairies
+			configIds.length = MAX_FAIRY_COUNT
 		}
 
 		this.migrateFairyConfigs(fairyConfigs)
@@ -125,7 +134,7 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 	 * Create a new fairy configuration and add it to the user's settings.
 	 * Returns the ID of the new fairy.
 	 *
-	 * @param index - Optional index for fixed fairy names (0 = leader, 1 = second, 2 = third)
+	 * @param index - Optional index for fixed fairy names (0 = leader, 1 = follower)
 	 */
 	createNewFairyConfig(index?: number) {
 		const randomOutfit = {

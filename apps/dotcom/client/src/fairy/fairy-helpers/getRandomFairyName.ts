@@ -1,11 +1,10 @@
 /**
  * Fixed fairy names for consistent identification.
- * The first fairy (index 0) is always the leader.
+ * The first fairy (index 0) is always the leader, the second (index 1) is the follower.
  */
 export const FIXED_FAIRY_NAMES = [
 	'Alice Sparklewind', // Leader - always first
-	'Bob Glimmerson', // Second fairy
-	'Charlie Tinklebell', // Third fairy
+	'Bob Glimmerson', // Follower
 ] as const
 
 function rand<T>(array: T[]): T {
@@ -23,7 +22,7 @@ const usedNames = new Set<string>()
  * Otherwise, generates a random name.
  *
  * @param step - Retry step for random name generation
- * @param index - Optional index to get a fixed fairy name (0 = leader, 1 = second, 2 = third)
+ * @param index - Optional index to get a fixed fairy name (0 = leader, 1 = follower)
  * @returns The fairy name
  */
 export function getRandomFairyName(step = 0, index?: number) {
