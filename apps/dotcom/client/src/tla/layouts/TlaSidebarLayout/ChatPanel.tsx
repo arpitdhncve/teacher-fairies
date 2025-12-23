@@ -374,6 +374,7 @@ function DataHandler({ agent, onUi }: { agent: FairyAgent; onUi: (m: ChatMsg) =>
 
 				const request_id = decoded?.request_id
 				const instruction = decoded?.instruction
+				console.log('draw.request', { request_id, instruction })
 
 				if (!request_id) {
 					console.warn('draw.request: no valid request_id found')
@@ -557,7 +558,7 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 			}
 
 			setLkToken(tokenToUse)
-			setLkUrl('wss://asdfgh-efschaun.livekit.cloud')
+			setLkUrl('wss://testing-ndfsn-fvnhszjz.livekit.cloud')
 			setLkConnect(true)
 		} catch {
 			setError('Failed to start learning session')
@@ -582,7 +583,7 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 					justifyContent: 'center',
 				}}
 			>
-				<div style={{ fontSize: 14, opacity: 0.6 }}>Initializing agent...</div>
+				<div style={{ fontSize: 14, opacity: 0.6 }}>Initializing teacher...</div>
 			</div>
 		)
 	}
