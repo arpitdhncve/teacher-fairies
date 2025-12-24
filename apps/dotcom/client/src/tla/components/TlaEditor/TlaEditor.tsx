@@ -96,6 +96,7 @@ export const components: TLComponents = {
 	SharePanel: TlaEditorSharePanel,
 	Dialogs: null,
 	Toasts: null,
+	ZoomMenu: null,
 
 	InFrontOfTheCanvas: () => (
 		<Suspense fallback={<div />}>
@@ -425,8 +426,10 @@ function TlaEditorInner({ fileSlug, deepLinks, onLeaderAgentChange }: TlaEditorP
 				overrides={[overrides, extraDragIconOverrides]}
 				getShapeVisibility={getShapeVisibility}
 				hideUi={true}
+				cameraOptions={{ isLocked: true, zoomSpeed: 0, zoomSteps: [1] }}
 			>
 				<ThemeUpdater />
+				<ViewportLogger />
 				<SneakyDarkModeSync />
 				<SneakyToolSwitcher />
 				{app && <SneakyTldrawFileDropHandler />}
@@ -482,6 +485,18 @@ function CustomDebugMenu() {
 			<DefaultDebugMenuContent />
 		</DefaultDebugMenu>
 	)
+}
+
+function ViewportLogger() {
+	const editor = useEditor()
+
+	useEffect(() => {
+		const viewportBounds = editor.getViewportPageBounds()
+		console.log('Top-left corner:', { x: viewportBounds.minX, y: viewportBounds.minY })
+		console.log('Bottom-right corner:', { x: viewportBounds.maxX, y: viewportBounds.maxY })
+	}, [editor])
+
+	return null
 }
 
 const FILE_STATE_UPDATE_INTERVAL = 10_000

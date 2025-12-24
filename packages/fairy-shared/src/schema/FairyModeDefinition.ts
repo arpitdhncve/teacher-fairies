@@ -318,7 +318,6 @@ export const FAIRY_MODE_DEFINITIONS = [
 			'create-duo-task',
 			'delete-project-task',
 			'direct-to-start-duo-task',
-			'start-duo-task',
 			'await-duo-tasks-completion',
 		],
 	},

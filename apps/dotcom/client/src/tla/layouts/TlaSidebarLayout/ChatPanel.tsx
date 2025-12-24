@@ -295,7 +295,17 @@ function UnifiedChat({ items }: { items: ChatMsg[] }) {
 	)
 }
 
-function DataHandler({ agent, onUi }: { agent: FairyAgent; onUi: (m: ChatMsg) => void }) {
+function DataHandler({
+	agent,
+	onUi,
+	pendingDrawRequestsRef,
+}: {
+	agent: FairyAgent
+	onUi: (m: ChatMsg) => void
+	pendingDrawRequestsRef: React.MutableRefObject<
+		Map<string, { request_id: string; previousMode: string }>
+	>
+}) {
 	const room = React.useContext(RoomContext)
 
 	useEffect(() => {
@@ -374,6 +384,7 @@ function DataHandler({ agent, onUi }: { agent: FairyAgent; onUi: (m: ChatMsg) =>
 
 				const request_id = decoded?.request_id
 				const instruction = decoded?.instruction
+				console.log('draw.request', { request_id, instruction })
 
 				if (!request_id) {
 					console.warn('draw.request: no valid request_id found')
@@ -430,6 +441,17 @@ function DataHandler({ agent, onUi }: { agent: FairyAgent; onUi: (m: ChatMsg) =>
 				}
 
 				try {
+					// Track the leader's current mode before starting
+					const currentMode = leaderAgent.mode.getMode()
+					console.log('[ChatPanel] Leader mode before draw:', currentMode)
+
+					// Store this as a pending request - we'll send draw.response later
+					// when the leader transitions to 'idling' mode (indicating project completion)
+					pendingDrawRequestsRef.current.set(leaderAgent.id, {
+						request_id,
+						previousMode: currentMode,
+					})
+
 					// Send instruction ONLY to the leader
 					// The leader will use orchestration mode to:
 					// 1. Create a project (if not already in one)
@@ -437,12 +459,14 @@ function DataHandler({ agent, onUi }: { agent: FairyAgent; onUi: (m: ChatMsg) =>
 					// 3. Delegate tasks to follower fairies (Bob & Charlie)
 					await leaderAgent.drawFromLiveKitInstruction(instruction)
 
-					room.localParticipant.publishData(
-						new TextEncoder().encode(JSON.stringify({ request_id, ok: true })),
-						{ topic: 'draw.response' }
-					)
+					// NOTE: We do NOT send draw.response here anymore!
+					// It will be sent when the leader transitions to 'idling' mode
+					// (see the useEffect hook that monitors mode changes)
+					console.log('[ChatPanel] Draw instruction initiated, waiting for project completion...')
 				} catch (err: any) {
 					console.error('[ChatPanel] Error executing draw instruction:', err)
+					// Remove from pending on error
+					pendingDrawRequestsRef.current.delete(leaderAgent.id)
 					room.localParticipant.publishData(
 						new TextEncoder().encode(
 							JSON.stringify({
@@ -491,6 +515,60 @@ function DataHandler({ agent, onUi }: { agent: FairyAgent; onUi: (m: ChatMsg) =>
 		}
 	}, [room, agent, onUi])
 
+	// Monitor agent mode changes to detect project completion
+	useEffect(() => {
+		if (!room || !agent) return
+
+		// Poll for mode changes every 500ms
+		const intervalId = setInterval(() => {
+			const fairyApp = (agent as any)?.fairyApp
+			if (!fairyApp) return
+
+			const allAgents = fairyApp?.agents?.getAgents() || []
+
+			allAgents.forEach((agentInstance: FairyAgent) => {
+				const pendingRequest = pendingDrawRequestsRef.current.get(agentInstance.id)
+				if (!pendingRequest) return
+
+				const currentMode = agentInstance.mode.getMode()
+
+				// Update the tracked mode if agent entered orchestration
+				if (
+					currentMode === 'duo-orchestrating-active' &&
+					pendingRequest.previousMode === 'idling'
+				) {
+					console.log(`[ChatPanel] Agent ${agentInstance.id} entered duo-orchestrating-active mode`)
+					pendingRequest.previousMode = 'duo-orchestrating-active'
+				}
+
+				// If the agent transitioned from orchestrating back to 'idling', the project is complete
+				if (
+					currentMode === 'idling' &&
+					pendingRequest.previousMode === 'duo-orchestrating-active'
+				) {
+					console.log(
+						`[ChatPanel] ✅ Project completed! Agent ${agentInstance.id} transitioned from duo-orchestrating-active to idling. Sending draw.response for request ${pendingRequest.request_id}`
+					)
+
+					// Send the success response
+					room.localParticipant.publishData(
+						new TextEncoder().encode(
+							JSON.stringify({ request_id: pendingRequest.request_id, ok: true })
+						),
+						{ topic: 'draw.response' }
+					)
+
+					// Remove from pending
+					pendingDrawRequestsRef.current.delete(agentInstance.id)
+				}
+			})
+		}, 500)
+
+		return () => {
+			clearInterval(intervalId)
+		}
+	}, [room, agent, pendingDrawRequestsRef])
+
 	return null
 }
 
@@ -502,6 +580,11 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 	const [error, setError] = useState<string | null>(null)
 
 	const [messages, setMessages] = useState<ChatMsg[]>([])
+
+	// Track pending draw requests: Map<leaderAgentId, { request_id, previousMode }>
+	const pendingDrawRequestsRef = useRef<Map<string, { request_id: string; previousMode: string }>>(
+		new Map()
+	)
 
 	const pushMessage = useCallback((m: ChatMsg) => {
 		setMessages((prev) => {
@@ -557,7 +640,7 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 			}
 
 			setLkToken(tokenToUse)
-			setLkUrl('wss://asdfgh-efschaun.livekit.cloud')
+			setLkUrl('wss://test-agent1234321-k4xkhydv.livekit.cloud')
 			setLkConnect(true)
 		} catch {
 			setError('Failed to start learning session')
@@ -582,7 +665,7 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 					justifyContent: 'center',
 				}}
 			>
-				<div style={{ fontSize: 14, opacity: 0.6 }}>Initializing agent...</div>
+				<div style={{ fontSize: 14, opacity: 0.6 }}>Initializing teacher...</div>
 			</div>
 		)
 	}
@@ -678,7 +761,11 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 									flexDirection: 'column',
 								}}
 							>
-								<DataHandler agent={agent} onUi={pushMessage} />
+								<DataHandler
+									agent={agent}
+									onUi={pushMessage}
+									pendingDrawRequestsRef={pendingDrawRequestsRef}
+								/>
 								<TranscriptionCollector onUser={pushMessage} />
 								<UnifiedChat items={messages} />
 							</div>

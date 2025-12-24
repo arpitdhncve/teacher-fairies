@@ -117,11 +117,10 @@ export function FairyProjectView({
 			if (isDuo) {
 				const partnerName = followers[0]?.getConfig()?.name ?? 'your partner'
 				const partnerId = followers[0]?.id ?? ''
-				return `You are collaborating with your partner on a duo project. You are the leader of the duo.You have been instructed to do this project:
-${instruction}.
-A project has automatically been created, but you need to start it yourself. You have been placed into duo orchestrator mode. You are working together with your partner to complete this project. Your partner is:
-- name: ${partnerName} (id: ${partnerId})
-You are to complete the project together. You can assign tasks to your partner or work on tasks yourself. As you are the leader of the duo, your priority is to assign tasks for your partner to complete, but you may do tasks yourself as well, if it makes sense to work in parallel. Make sure to give the approximate locations of the work to be done, if relevant, in order to make sure you both don't get confused if there are multiple tasks to be done.`
+				return `You are collaborating with your partner on a duo project. You are the leader of the duo. You have been instructed to do this project:
+${instruction}
+
+You are to complete the project by orchestrating your partner. You can ONLY assign tasks to your partner - you cannot work on tasks yourself. As the leader of the duo, your responsibility is to plan the project, create tasks, and direct your partner to execute them sequentially. Make sure to give the approximate locations of the work to be done, if relevant, in order to make sure the tasks are clear and well-positioned.`
 			} else {
 				const followerNames = followers
 					.map((agent) => `- name: ${agent.getConfig()?.name} (id: ${agent.id})`)
