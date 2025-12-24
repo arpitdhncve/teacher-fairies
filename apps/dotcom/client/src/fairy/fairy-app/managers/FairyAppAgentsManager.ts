@@ -68,17 +68,12 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 
 		const existingIds = new Set(existingAgents.map((a) => a.id))
 
-		// Create fairies until we have exactly MAX_FAIRY_COUNT (2)
-		// Each fairy gets a fixed index (0 = leader, 1 = follower)
-		// We need to ensure fairies are created with consistent indices
+		// Create fairies until we have exactly MAX_FAIRY_COUNT (1)
 		const currentFairyCount = configIds.length
 		if (currentFairyCount < MAX_FAIRY_COUNT) {
 			const numToCreate = MAX_FAIRY_COUNT - currentFairyCount
 
-			// Create fairies with indices based on their final position
-			// If we have 0 fairies, create indices 0, 1, 2
-			// If we have 1 fairy, create indices 1, 2
-			// If we have 2 fairies, create index 2
+			// Create the fairy with index 0
 			for (let i = 0; i < numToCreate; i++) {
 				const fairyIndex = currentFairyCount + i
 				const id = this.createNewFairyConfig(fairyIndex)
@@ -134,7 +129,7 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 	 * Create a new fairy configuration and add it to the user's settings.
 	 * Returns the ID of the new fairy.
 	 *
-	 * @param index - Optional index for fixed fairy names (0 = leader, 1 = follower)
+	 * @param index - Optional index for fixed fairy name
 	 */
 	createNewFairyConfig(index?: number) {
 		const randomOutfit = {

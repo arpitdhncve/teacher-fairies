@@ -368,9 +368,8 @@ function DataHandler({
 				return
 			}
 
-			// --- DRAW: Send instruction to LEADER ONLY (orchestration mode) ---
-			// The leader (index 0 - Alice Sparklewind) will receive the instruction,
-			// create a project, and delegate tasks to followers (Bob & Charlie)
+			// --- DRAW: Send instruction to the SINGLE fairy using soloing mode ---
+			// The fairy will plan and execute tasks using the soloing flow
 			if (topic === 'draw.request') {
 				const payloadText = new TextDecoder().decode(payload)
 				let decoded: any
@@ -422,17 +421,17 @@ function DataHandler({
 					return
 				}
 
-				// Get the LEADER fairy (always index 0 - Alice Sparklewind)
-				const leaderAgent = allAgents[0]
+				// Get the fairy (only one in single fairy mode)
+				const fairyAgent = allAgents[0]
 
-				// Verify leader has the drawFromLiveKitInstruction method
-				if (typeof leaderAgent?.drawFromLiveKitInstruction !== 'function') {
+				// Verify fairy has the drawFromLiveKitInstruction method
+				if (typeof fairyAgent?.drawFromLiveKitInstruction !== 'function') {
 					room.localParticipant.publishData(
 						new TextEncoder().encode(
 							JSON.stringify({
 								request_id,
 								ok: false,
-								error: 'Leader fairy does not have drawFromLiveKitInstruction method',
+								error: 'Fairy does not have drawFromLiveKitInstruction method',
 							})
 						),
 						{ topic: 'draw.response' }
@@ -441,32 +440,28 @@ function DataHandler({
 				}
 
 				try {
-					// Track the leader's current mode before starting
-					const currentMode = leaderAgent.mode.getMode()
-					console.log('[ChatPanel] Leader mode before draw:', currentMode)
+					// Track the fairy's current mode before starting
+					const currentMode = fairyAgent.mode.getMode()
+					console.log('[ChatPanel] Fairy mode before draw:', currentMode)
 
 					// Store this as a pending request - we'll send draw.response later
-					// when the leader transitions to 'idling' mode (indicating project completion)
-					pendingDrawRequestsRef.current.set(leaderAgent.id, {
+					// when the fairy transitions to 'idling' mode (indicating work completion)
+					pendingDrawRequestsRef.current.set(fairyAgent.id, {
 						request_id,
 						previousMode: currentMode,
 					})
 
-					// Send instruction ONLY to the leader
-					// The leader will use orchestration mode to:
-					// 1. Create a project (if not already in one)
-					// 2. Plan the work and create tasks
-					// 3. Delegate tasks to follower fairies (Bob & Charlie)
-					await leaderAgent.drawFromLiveKitInstruction(instruction)
+					// Send instruction to the fairy using soloing mode
+					await fairyAgent.drawFromLiveKitInstruction(instruction)
 
 					// NOTE: We do NOT send draw.response here anymore!
-					// It will be sent when the leader transitions to 'idling' mode
+					// It will be sent when the fairy transitions to 'idling' mode
 					// (see the useEffect hook that monitors mode changes)
-					console.log('[ChatPanel] Draw instruction initiated, waiting for project completion...')
+					console.log('[ChatPanel] Draw instruction initiated, waiting for work completion...')
 				} catch (err: any) {
 					console.error('[ChatPanel] Error executing draw instruction:', err)
 					// Remove from pending on error
-					pendingDrawRequestsRef.current.delete(leaderAgent.id)
+					pendingDrawRequestsRef.current.delete(fairyAgent.id)
 					room.localParticipant.publishData(
 						new TextEncoder().encode(
 							JSON.stringify({
@@ -532,22 +527,16 @@ function DataHandler({
 
 				const currentMode = agentInstance.mode.getMode()
 
-				// Update the tracked mode if agent entered orchestration
-				if (
-					currentMode === 'duo-orchestrating-active' &&
-					pendingRequest.previousMode === 'idling'
-				) {
-					console.log(`[ChatPanel] Agent ${agentInstance.id} entered duo-orchestrating-active mode`)
-					pendingRequest.previousMode = 'duo-orchestrating-active'
+				// Update the tracked mode if agent entered soloing mode
+				if (currentMode === 'soloing' && pendingRequest.previousMode === 'idling') {
+					console.log(`[ChatPanel] Agent ${agentInstance.id} entered soloing mode`)
+					pendingRequest.previousMode = 'soloing'
 				}
 
-				// If the agent transitioned from orchestrating back to 'idling', the project is complete
-				if (
-					currentMode === 'idling' &&
-					pendingRequest.previousMode === 'duo-orchestrating-active'
-				) {
+				// If the agent transitioned from soloing back to 'idling', the work is complete
+				if (currentMode === 'idling' && pendingRequest.previousMode === 'soloing') {
 					console.log(
-						`[ChatPanel] ✅ Project completed! Agent ${agentInstance.id} transitioned from duo-orchestrating-active to idling. Sending draw.response for request ${pendingRequest.request_id}`
+						`[ChatPanel] ✅ Work completed! Agent ${agentInstance.id} transitioned from soloing to idling. Sending draw.response for request ${pendingRequest.request_id}`
 					)
 
 					// Send the success response
