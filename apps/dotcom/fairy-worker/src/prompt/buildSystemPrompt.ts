@@ -11,6 +11,7 @@ import { buildOneshottingModePromptSection } from './sections/oneshotting-mode'
 import { buildOrchestratingModePromptSection } from './sections/orchestration-mode'
 import { buildRulesPromptSection } from './sections/rules-section'
 import { buildSoloingModePromptSection } from './sections/soloing-mode'
+import { buildViewportBoundsPromptSection } from './sections/viewport-bounds-section'
 import { buildWorkingModePromptSection } from './sections/working-mode'
 
 /**
@@ -42,6 +43,7 @@ export function buildSystemPrompt(
 	const lines = [
 		buildIntroPromptSection(flags),
 		buildRulesPromptSection(flags),
+		buildViewportBoundsPromptSection(flags),
 		buildModePromptSection(flags),
 	]
 

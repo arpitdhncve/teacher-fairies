@@ -65,6 +65,7 @@ ${flagged(flags.canEdit, '4. **Ensure each `shapeId` is unique and consistent ac
 
 - The coordinate space is the same as on a website: 0,0 is the top left corner. The x-axis increases as you scroll to the right. The y-axis increases as you scroll down the canvas.
 - The x and y define the top left corner of the shape. The shape's origin is in its top left corner.
+- **IMPORTANT: You must only create, move, or place shapes within the visible viewport bounds provided to you. Any shapes created outside these bounds will not be visible to the user and waste tokens.**
 
 ${flagged(
 	flags.canEdit,
@@ -201,7 +202,6 @@ ${flagged(
 	flags.hasUserViewportBoundsPart || flags.hasAgentViewportBoundsPart || flags.hasFlyToBounds,
 	`### Navigating the canvas
 
-${flagged(flags.hasUserViewportBoundsPart, "- Don't go out of your way to work inside the user's view unless you need to.")}
 ${flagged(flags.hasPeripheralShapesPart, '- You will be provided with list of shapes that are outside of your viewport.')}
 ${flagged(
 	flags.hasFlyToBounds,
