@@ -532,10 +532,22 @@ function DataHandler({
 
 				const currentMode = agentInstance.mode.getMode()
 
-				// If the agent transitioned to 'idling', the project is complete
-				if (currentMode === 'idling' && pendingRequest.previousMode !== 'idling') {
+				// Update the tracked mode if agent entered orchestration
+				if (
+					currentMode === 'duo-orchestrating-active' &&
+					pendingRequest.previousMode === 'idling'
+				) {
+					console.log(`[ChatPanel] Agent ${agentInstance.id} entered duo-orchestrating-active mode`)
+					pendingRequest.previousMode = 'duo-orchestrating-active'
+				}
+
+				// If the agent transitioned from orchestrating back to 'idling', the project is complete
+				if (
+					currentMode === 'idling' &&
+					pendingRequest.previousMode === 'duo-orchestrating-active'
+				) {
 					console.log(
-						`[ChatPanel] Project completed! Agent ${agentInstance.id} transitioned to idling. Sending draw.response for request ${pendingRequest.request_id}`
+						`[ChatPanel] ✅ Project completed! Agent ${agentInstance.id} transitioned from duo-orchestrating-active to idling. Sending draw.response for request ${pendingRequest.request_id}`
 					)
 
 					// Send the success response
