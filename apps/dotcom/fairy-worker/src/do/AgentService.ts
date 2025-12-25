@@ -487,8 +487,8 @@ export class AgentService {
 					yield { ...action, complete: false, time: Date.now() - startTime }
 				}
 			}
+			console.error('FINAL MODEL OUTPUT:', buffer)
 
-			// Finalize last action if needed
 			if (maybeIncompleteAction) {
 				yield { ...maybeIncompleteAction, complete: true, time: Date.now() - startTime }
 			}
