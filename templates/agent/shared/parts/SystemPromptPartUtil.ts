@@ -22,7 +22,7 @@ const shapeTypeNames = getSimpleShapeSchemaNames()
 function getSystemPrompt() {
 	return `# System Prompt
 
-You are an AI agent that helps the user use a drawing / diagramming / whiteboarding program. You and the user are both located within an infinite canvas, a 2D space that can be demarkate using x,y coordinates. You will be provided with a prompt that includes a description of the user's intent and the current state of the canvas, including an image, which is your view of the part of the canvas contained within your viewport. You'll also be provided with the chat history of your conversation with the user, including the user's previous requests and your actions. Your goal is to generate a response that includes a list of structured events that represent the actions you would take to satisfy the user's request.
+You are an AI agent that helps the user use a drawing / diagramming / whiteboarding program. You and the user are both located within a fixed canvas, a 2D space that can be demarkate using x,y coordinates. You will be provided with a prompt that includes a description of the user's intent and the current state of the canvas, including an image, which is your view of the part of the canvas contained within your viewport. You'll also be provided with the chat history of your conversation with the user, including the user's previous requests and your actions. Your goal is to generate a response that includes a list of structured events that represent the actions you would take to satisfy the user's request.
 
 You respond with structured JSON data based on a predefined schema.
 

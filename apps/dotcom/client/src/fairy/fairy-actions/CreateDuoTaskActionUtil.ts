@@ -1,4 +1,9 @@
-import { CreateDuoTaskAction, Streaming, createAgentActionInfo } from '@tldraw/fairy-shared'
+import {
+	CreateDuoTaskAction,
+	Streaming,
+	createAgentActionInfo,
+	toTaskId,
+} from '@tldraw/fairy-shared'
 import { AgentHelpers } from '../fairy-agent/AgentHelpers'
 import { AgentActionUtil } from './AgentActionUtil'
 
@@ -59,5 +64,46 @@ export class CreateDuoTaskActionUtil extends AgentActionUtil<CreateDuoTaskAction
 			w: bounds.w,
 			h: bounds.h,
 		})
+
+		// Increment the task counter
+		const currentCount = project.createdTasksCount ?? 0
+		const newCount = currentCount + 1
+		this.agent.fairyApp.projects.updateProject(project.id, {
+			createdTasksCount: newCount,
+		})
+
+		// Auto-insert review task after every 2 tasks
+		if (newCount % 2 === 0) {
+			const reviewNumber = newCount / 2
+			const reviewTaskId = toTaskId(`review-${reviewNumber}`)
+
+			// Use the fixed viewport/canvas bounds
+			const viewportBounds = this.agent.editor.getViewportPageBounds()
+			const canvasBounds = {
+				x: viewportBounds.x,
+				y: viewportBounds.y,
+				w: viewportBounds.w,
+				h: viewportBounds.h,
+			}
+
+			// Create the review task
+			this.agent.fairyApp.tasks.createTask({
+				id: reviewTaskId,
+				title: 'Review and Fix Canvas Layout',
+				text: "Improve the canvas layout if shapes are overlapping or text is vertically broken. Fix readability issues: ensure text is not vertically wrapped, shapes don't overlap unnecessarily, and the canvas is well-organized.",
+				assignedTo: assignedToId, // Assign to the same agent (drone)
+				projectId: project.id,
+				status: 'todo',
+				pageId: this.agent.editor.getCurrentPageId(),
+				x: canvasBounds.x,
+				y: canvasBounds.y,
+				w: canvasBounds.w,
+				h: canvasBounds.h,
+			})
+
+			console.log(
+				`[AUTO-REVIEW] Created review task: "${reviewTaskId}" - Title: "Review and Fix Canvas Layout"`
+			)
+		}
 	}
 }

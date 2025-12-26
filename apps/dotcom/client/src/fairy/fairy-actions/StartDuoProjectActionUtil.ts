@@ -73,6 +73,7 @@ export class StartDuoProjectActionUtil extends AgentActionUtil<StartDuoProjectAc
 			description: action.projectDescription,
 			plan: action.projectPlan,
 			color: action.projectColor,
+			createdTasksCount: 0, // Initialize task counter for auto-review insertion
 		})
 	}
 }
