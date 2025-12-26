@@ -11,7 +11,7 @@ import { idValidator } from '../misc/id-validator'
 
 /**
  * A camera record representing the viewport's position and zoom level.
- * The camera defines what portion of the infinite canvas is visible to the user.
+ * The camera defines what portion of the fixed canvas is visible to the user.
  *
  * @example
  * ```ts

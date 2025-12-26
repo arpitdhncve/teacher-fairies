@@ -9,6 +9,7 @@ export interface FairyProject {
 	members: FairyProjectMember[]
 	plan: string
 	softDeleted: boolean
+	createdTasksCount?: number // Track leader-created tasks for auto-review insertion
 }
 
 export interface FairyProjectMember {
