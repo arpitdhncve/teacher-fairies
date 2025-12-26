@@ -409,10 +409,12 @@ export class AgentService {
 			// Build the system prompt
 			const systemPrompt = buildSystemPrompt(prompt, { withSchema: true })
 			messages.push({ role: 'system', content: systemPrompt })
+			console.error('[3] System prompt:', JSON.stringify(systemPrompt, null, 2))
 
 			// Additional prompt messages (from parts)
 			const promptMessages = buildMessages(prompt)
 			messages.push(...promptMessages)
+			console.error('[3] Prompt messages:', JSON.stringify(promptMessages, null, 2))
 
 			// Debug logs
 			const debugPart = prompt.debug as DebugPart | undefined

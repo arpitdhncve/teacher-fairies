@@ -83,6 +83,9 @@ export class FairyApp {
 		public editor: Editor,
 		public tldrawApp: TldrawApp
 	) {
+		// Clear canvas on initialization (page load)
+		this.clearCanvas()
+
 		this.agents = new FairyAppAgentsManager(this)
 		this.following = new FairyAppFollowingManager(this)
 		this.persistence = new FairyAppPersistenceManager(this)
@@ -155,5 +158,16 @@ export class FairyApp {
 		this.agents.resetAllAgents()
 		this.following.reset()
 		this.waits.reset()
+	}
+
+	/**
+	 * Clear all shapes from the canvas.
+	 * Called on initialization to ensure a fresh whiteboard on page load.
+	 */
+	clearCanvas() {
+		const allShapes = this.editor.getCurrentPageShapeIds()
+		if (allShapes.size > 0) {
+			this.editor.deleteShapes(Array.from(allShapes))
+		}
 	}
 }
