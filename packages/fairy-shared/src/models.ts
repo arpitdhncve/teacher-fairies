@@ -16,9 +16,9 @@ export const AGENT_MODEL_DEFINITIONS = {
 		provider: 'google',
 	},
 
-	'google/gemini-3-flash-preview': {
-		name: 'google/gemini-3-flash-preview',
-		id: 'google/gemini-3-flash-preview',
+	'bytedance-seed/seed-1.6-flash': {
+		name: 'bytedance-seed/seed-1.6-flash',
+		id: 'bytedance-seed/seed-1.6-flash',
 		provider: 'openrouter',
 	},
 
@@ -37,7 +37,7 @@ export const AGENT_MODEL_DEFINITIONS = {
 
 export type AgentModelName = keyof typeof AGENT_MODEL_DEFINITIONS
 
-const FALLBACK_MODEL_NAME = 'google/gemini-3-flash-preview' as AgentModelName
+const FALLBACK_MODEL_NAME = 'bytedance-seed/seed-1.6-flash' as AgentModelName
 
 function isValidModelName(value: string | undefined): value is AgentModelName {
 	return !!value && value in AGENT_MODEL_DEFINITIONS
@@ -95,7 +95,7 @@ export function getModelPricingInfo(
 					outputPrice: 18,
 				}
 			}
-		case 'google/gemini-3-flash-preview':
+		case 'bytedance-seed/seed-1.6-flash':
 			if (inputTokens <= TIER_THRESHOLD) {
 				return {
 					uncachedInputPrice: 3,

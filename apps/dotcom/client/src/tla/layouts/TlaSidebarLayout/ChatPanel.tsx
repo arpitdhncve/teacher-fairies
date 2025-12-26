@@ -532,22 +532,15 @@ function DataHandler({
 
 				const currentMode = agentInstance.mode.getMode()
 
-				// Update the tracked mode if agent entered orchestration
-				if (
-					currentMode === 'duo-orchestrating-active' &&
-					pendingRequest.previousMode === 'idling'
-				) {
-					console.log(`[ChatPanel] Agent ${agentInstance.id} entered duo-orchestrating-active mode`)
-					pendingRequest.previousMode = 'duo-orchestrating-active'
+				if (currentMode === 'soloing' && pendingRequest.previousMode === 'idling') {
+					console.log(`[ChatPanel] Agent ${agentInstance.id} entered soloing mode`)
+					pendingRequest.previousMode = 'soloing'
 				}
 
-				// If the agent transitioned from orchestrating back to 'idling', the project is complete
-				if (
-					currentMode === 'idling' &&
-					pendingRequest.previousMode === 'duo-orchestrating-active'
-				) {
+				// If the agent transitioned from soloing back to 'idling', the task is complete
+				if (currentMode === 'idling' && pendingRequest.previousMode === 'soloing') {
 					console.log(
-						`[ChatPanel] ✅ Project completed! Agent ${agentInstance.id} transitioned from duo-orchestrating-active to idling. Sending draw.response for request ${pendingRequest.request_id}`
+						`[ChatPanel] ✅ Task completed! Agent ${agentInstance.id} transitioned from soloing to idling. Sending draw.response for request ${pendingRequest.request_id}`
 					)
 
 					// Send the success response
@@ -640,7 +633,7 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 			}
 
 			setLkToken(tokenToUse)
-			setLkUrl('wss://project-1234-47or2pnp.livekit.cloud')
+			setLkUrl('wss://agent-1234567890-mtyb584b.livekit.cloud')
 			setLkConnect(true)
 		} catch {
 			setError('Failed to start learning session')

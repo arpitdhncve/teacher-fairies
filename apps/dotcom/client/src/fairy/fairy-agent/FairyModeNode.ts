@@ -112,6 +112,10 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 		},
 	},
 	soloing: {
+		onEnter(agent) {
+			// Reset solo task counter when entering soloing mode
+			agent.$soloCreatedTasksCount.set(0)
+		},
 		onPromptEnd(agent) {
 			// Continue if there are outstanding tasks
 			const myTasks = agent.fairyApp.tasks

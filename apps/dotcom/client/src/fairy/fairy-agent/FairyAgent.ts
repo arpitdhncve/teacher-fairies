@@ -21,7 +21,6 @@ import {
 	getFairyModeDefinition,
 	PromptPart,
 	Streaming,
-	toProjectId,
 } from '@tldraw/fairy-shared'
 import {
 	Atom,
@@ -158,7 +157,13 @@ export class FairyAgent {
 	/**
 	 * Whether the agent should use one-shotting mode or soloing mode when prompted solo.
 	 */
-	$useOneShottingMode = atom<boolean>('oneShotMode', true)
+	$useOneShottingMode = atom<boolean>('oneShotMode', false)
+
+	/**
+	 * Counter for tasks created during soloing mode.
+	 * Used to auto-inject review tasks after every 2 tasks.
+	 */
+	$soloCreatedTasksCount = atom<number>('soloCreatedTasksCount', 0)
 
 	/**
 	 * A function that stops the wake-on-select reaction.
@@ -1074,99 +1079,24 @@ export class FairyAgent {
 	}
 
 	/**
-	 * Draw from a LiveKit instruction using duo orchestration mode.
-	 * This method is called when the leader fairy receives a drawing instruction from LiveKit.
-	 *
-	 * The leader will:
-	 * 1. Find the follower fairy (should be exactly 1 other fairy)
-	 * 2. Create a duo project with itself as duo-orchestrator and the follower as drone
-	 * 3. Receive the instruction and plan the work
-	 * 4. Delegate tasks to the follower fairy using the duo orchestration system
+	 * Handle a draw instruction received via LiveKit. Uses soloing mode directly.
 	 *
 	 * @param instruction - The instruction text to execute
-	 * @returns A promise that resolves when the orchestration is set up
+	 * @returns A promise that resolves when the prompt is sent
 	 */
 	async drawFromLiveKitInstruction(instruction: string) {
 		if (!this.editor) {
 			throw new Error('Editor not ready')
 		}
 
-		// Get all agents and find the follower (should be exactly 1 other agent)
-		const allAgents = this.fairyApp.agents.getAgents()
-		const followerAgents = allAgents.filter(
-			(agent) =>
-				agent.id !== this.id && this.fairyApp.projects.getProjectByAgentId(agent.id) === undefined
-		)
+		// Clear previous chat history for fresh context on each new draw.request
+		this.chat.reset()
 
-		if (followerAgents.length === 0) {
-			// No follower available, fall back to solo mode
-			console.warn('No follower agent available for duo mode, using solo mode')
-			const bounds = this.editor.getViewportPageBounds()
-			await this.prompt({
-				message: instruction,
-				bounds,
-			})
-			return
-		}
-
-		// Create a duo project
-		const follower = followerAgents[0]
-		const newProjectId = uniqueId(5)
-		const newProject: FairyProject = {
-			id: toProjectId(newProjectId),
-			title: '',
-			description: '',
-			color: '',
-			members: [
-				{ id: this.id, role: 'duo-orchestrator' },
-				{ id: follower.id, role: 'drone' },
-			],
-			plan: '',
-			softDeleted: false,
-		}
-
-		// Clean up any soft-deleted projects and add the new one
-		this.fairyApp.projects.hardDeleteSoftDeletedProjects()
-		this.fairyApp.projects.addProject(newProject)
-
-		// Select both fairies in the project
-		allAgents.forEach((agent) => {
-			const shouldSelect = newProject.members.some((member) => member.id === agent.id)
-			agent.updateEntity((f) => (f ? { ...f, isSelected: shouldSelect } : f))
-		})
-
-		// Set leader as duo-orchestrator
-		this.interrupt({
-			mode: 'duo-orchestrating-active',
-			input: null,
-		})
-
-		// Set follower as standing by
-		follower.interrupt({ mode: 'standing-by', input: null })
-
-		// Move follower to the leader
-		const leaderPosition = this.getEntity().position
-		const leaderPageId = this.getEntity().currentPageId
-		const offset = 120
-		const position = { x: leaderPosition.x + offset, y: leaderPosition.y }
-		follower.position.moveTo(position)
-		follower.updateEntity((f) => ({ ...f, flipX: true, currentPageId: leaderPageId }))
-
-		// Build the duo orchestration prompt
-		const partnerName = follower.getConfig()?.name ?? 'your partner'
-		const partnerId = follower.id
-		const duoPrompt = `You are collaborating with your partner on a duo project. You are the leader of the duo. You have been instructed to do this project:
-${instruction}.
-A project has automatically been created, but you need to start it yourself. You have been placed into duo orchestrator mode. You are working together with your partner to complete this project. Your partner is:
-- name: ${partnerName} (id: ${partnerId})
-You are to complete the project by orchestrating your partner. You can ONLY assign tasks to your partner - you cannot work on tasks yourself. As the leader of the duo, your responsibility is to plan the project, create tasks, and direct your partner to execute them sequentially. Make sure to give the approximate locations of the work to be done, if relevant, in order to make sure the tasks are clear and well-positioned.`
-
-		// Send the prompt to the leader with the duo orchestration context
+		// Use soloing mode directly - single fairy execution
 		const bounds = this.editor.getViewportPageBounds()
 		await this.prompt({
 			source: 'user',
-			agentMessages: [duoPrompt],
-			userMessages: [instruction],
+			message: instruction,
 			bounds,
 		})
 	}
