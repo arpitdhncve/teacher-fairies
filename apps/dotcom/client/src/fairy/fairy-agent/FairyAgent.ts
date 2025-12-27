@@ -1089,8 +1089,17 @@ export class FairyAgent {
 			throw new Error('Editor not ready')
 		}
 
-		// Clear previous chat history for fresh context on each new draw.request
+		// Reset everything for fresh context on each new draw.request
+		// (similar to full reset() but keeping mode and not cancelling)
+		this.promptStartTime = null
+		this.todos.reset()
+		this.userAction.clearHistory()
+		this.clearTasks()
 		this.chat.reset()
+		this.chatOrigin.reset()
+		this.waits.reset()
+		this.usage.reset()
+		this.lints.reset()
 
 		// Use soloing mode directly - single fairy execution
 		const bounds = this.editor.getViewportPageBounds()

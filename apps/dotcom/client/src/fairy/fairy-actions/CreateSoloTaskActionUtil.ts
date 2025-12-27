@@ -47,7 +47,12 @@ export class CreateSoloTaskActionUtil extends AgentActionUtil<CreateSoloTaskActi
 		const newCount = currentCount + 1
 		this.agent.$soloCreatedTasksCount.set(newCount)
 
+		console.log(
+			`[SOLO-COUNTER] Task created: "${action.title}", counter: ${currentCount} → ${newCount}`
+		)
+
 		// Auto-inject review task after every 2 tasks
+		console.log(`[SOLO-COUNTER] Check review: newCount=${newCount}, newCount % 2 = ${newCount % 2}`)
 		if (newCount % 2 === 0) {
 			const reviewNumber = newCount / 2
 			const reviewTaskId = toTaskId(`solo-review-${reviewNumber}`)
@@ -77,5 +82,8 @@ export class CreateSoloTaskActionUtil extends AgentActionUtil<CreateSoloTaskActi
 				`[AUTO-REVIEW] Created solo review task: "${reviewTaskId}" after ${newCount} tasks`
 			)
 		}
+
+		// Print the task list after every task creation
+		console.log('[TASK LIST]', JSON.stringify(this.agent.fairyApp.tasks.getTasks(), null, 2))
 	}
 }
