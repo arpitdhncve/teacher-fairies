@@ -1163,6 +1163,16 @@ export class FairyAgent {
 		const partnerId = follower.id
 		const duoPrompt = `You are collaborating with your partner on a duo project. You are the leader of the duo. You have been instructed to do this project:
 ${instruction}.
+
+CRITICAL CONSTRAINTS - READ CAREFULLY:
+- Draw ONLY what is EXPLICITLY asked in the instruction above. Nothing more.
+- Do NOT add decorative elements (no backgrounds, borders, shadows, or embellishments).
+- Do NOT interpret or expand the scope beyond the literal request.
+- Do NOT add "nice to have" features or improvements.
+- If asked to "draw a circle", draw ONLY a circle - no colors unless specified, no fill unless specified, nothing else.
+- Complete the task as LITERALLY as possible.
+- When in doubt, do LESS, not more.
+
 A project has automatically been created, but you need to start it yourself. You have been placed into duo orchestrator mode. You are working together with your partner to complete this project. Your partner is:
 - name: ${partnerName} (id: ${partnerId})
 You are to complete the project by orchestrating your partner. You can ONLY assign tasks to your partner - you cannot work on tasks yourself. As the leader of the duo, your responsibility is to plan the project, create tasks, and direct your partner to execute them sequentially. Make sure to give the approximate locations of the work to be done, if relevant, in order to make sure the tasks are clear and well-positioned.`

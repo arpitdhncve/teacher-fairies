@@ -30,6 +30,46 @@ export class EndDuoProjectActionUtil extends AgentActionUtil<EndDuoProjectAction
 			return
 		}
 
+		// Two-phase end mechanism: first end-duo-project schedules a review, second one actually ends
+		if (!project.hasPendingFinalReview) {
+			// First time receiving end-duo-project: schedule a final review
+			this.agent.fairyApp.projects.updateProject(project.id, {
+				hasPendingFinalReview: true,
+			})
+
+			// Schedule review for the leader to examine the completed work
+			const viewportBounds = this.agent.editor.getViewportPageBounds()
+			this.agent.schedule({
+				bounds: {
+					x: viewportBounds.x,
+					y: viewportBounds.y,
+					w: viewportBounds.w,
+					h: viewportBounds.h,
+				},
+				agentMessages: [
+					`Before ending the project, perform a final review of the completed work on the canvas.
+
+Review checklist:
+1. COMPLETENESS: Verify that everything asked in the original prompt has been done. Nothing should be missing.
+2. NO EXTRAS: Ensure nothing extra was added beyond what was asked. Only what was requested should be present.
+3. LAYOUT QUALITY: Check for overlapping elements, text readability problems, or layout issues.
+
+If you find any problems:
+- Create a correction task for your partner using create-duo-task
+- Direct them to fix the issues using direct-to-start-duo-task
+- Wait for them to complete the fix
+
+If everything looks good and matches the original request exactly, proceed to end the project.`,
+				],
+			})
+
+			// Return early - don't end the project yet, let the review happen first
+			return
+		}
+
+		// If we reach here, hasPendingFinalReview is true - the review has been done
+		// Proceed with actual project ending
+
 		const membersIds = project.members.map((member) => member.id)
 		const memberAgents = this.agent.fairyApp.agents
 			.getAgents()

@@ -9,7 +9,7 @@ export interface FairyProject {
 	members: FairyProjectMember[]
 	plan: string
 	softDeleted: boolean
-	createdTasksCount?: number // Track leader-created tasks for auto-review insertion
+	hasPendingFinalReview?: boolean // Flag to track if final review has been scheduled before ending project
 }
 
 export interface FairyProjectMember {
