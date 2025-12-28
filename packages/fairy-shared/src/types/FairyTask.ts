@@ -1,16 +1,26 @@
 import { AgentId, ProjectId, TaskId } from '../schema/id-schemas'
 
-export interface FairyTask {
-	id: TaskId
+/**
+ * Base task definition containing common fields shared by all task types.
+ * Used as parent for FairyTask, PlannedTaskDefinition, etc.
+ */
+export interface BaseTaskDefinition {
 	title: string
 	text: string
-	projectId: ProjectId | null
-	assignedTo: AgentId | null
-	status: FairyTaskStatus
 	x: number
 	y: number
 	w: number
 	h: number
+}
+
+/**
+ * A full task that exists in the task management system.
+ */
+export interface FairyTask extends BaseTaskDefinition {
+	id: TaskId
+	projectId: ProjectId | null
+	assignedTo: AgentId | null
+	status: FairyTaskStatus
 	pageId?: string
 }
 

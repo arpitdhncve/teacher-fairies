@@ -388,8 +388,6 @@ export class AgentService {
 		userId: string,
 		userStub: ReturnType<Environment['TL_USER']['get']>
 	): AsyncGenerator<Streaming<AgentAction>> {
-		console.error('[3] AgentService.streamActions() → Preparing LLM call')
-
 		try {
 			const modelName = getModelName(prompt, this.env)
 			const model = this.getModel(modelName)
@@ -494,6 +492,7 @@ export class AgentService {
 			}
 
 			// Await usage to ensure onFinish callback completes
+			console.error('buffer', buffer)
 			await result.usage
 		} catch (error: any) {
 			if (signal?.aborted || error?.name === 'AbortError') return

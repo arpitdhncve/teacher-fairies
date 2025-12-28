@@ -24,17 +24,17 @@ export class FairyAgentModeManager extends BaseFairyAgentManager {
 	 */
 	constructor(public agent: FairyAgent) {
 		super(agent)
-		this.$mode = atom('fairyMode', 'sleeping')
+		this.$mode = atom('fairyMode', 'idling')
 	}
 
 	/**
 	 * Resets the mode manager to its initial state.
-	 * Sets the mode to 'sleeping' and updates the fairy entity's pose accordingly.
+	 * Sets the mode to 'idling' and updates the fairy entity's pose accordingly.
 	 * @returns void
 	 */
 	reset(): void {
-		this.$mode.set('sleeping')
-		const modeDefinition = getFairyModeDefinition('sleeping')
+		this.$mode.set('idling')
+		const modeDefinition = getFairyModeDefinition('idling')
 		this.agent.updateEntity((fairy) => ({ ...fairy, pose: modeDefinition.pose }))
 	}
 

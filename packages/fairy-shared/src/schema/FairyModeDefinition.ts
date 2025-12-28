@@ -317,7 +317,7 @@ export const FAIRY_MODE_DEFINITIONS = [
 			'end-duo-project',
 			'create-duo-task',
 			'delete-project-task',
-			'direct-to-start-duo-task',
+			// 'direct-to-start-duo-task' - Removed: system handles task distribution automatically via onPromptEnd
 			'await-duo-tasks-completion',
 		],
 	},

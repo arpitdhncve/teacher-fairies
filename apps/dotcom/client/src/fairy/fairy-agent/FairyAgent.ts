@@ -262,7 +262,7 @@ export class FairyAgent {
 			position: AgentHelpers.RoundVec(spawnPoint),
 			flipX: Math.random() < 0.5,
 			isSelected: false,
-			pose: 'sleeping',
+			pose: 'idle',
 			gesture: null,
 			currentPageId: editor.getCurrentPageId(),
 			velocity: { x: 0, y: 0 },
@@ -370,23 +370,22 @@ export class FairyAgent {
 			this.gesture.reset()
 
 			this.$fairyEntity.update((entity) => {
+				// Override sleeping pose with idle, since sleeping mode is removed
+				const loadedPose = state.fairyEntity?.pose ?? entity.pose
+				const pose = loadedPose === 'sleeping' ? 'idle' : loadedPose
 				return {
 					...entity,
 					flipX: state.fairyEntity?.flipX ?? entity.flipX,
 					currentPageId: state.fairyEntity?.currentPageId ?? entity.currentPageId,
 					isSelected: state.fairyEntity?.isSelected ?? entity.isSelected,
-					pose: state.fairyEntity?.pose ?? entity.pose,
+					pose,
 					velocity: { x: 0, y: 0 },
 					gesture: null,
 				}
 			})
-			const entity = this.$fairyEntity.get()
 
-			const isSleeping = entity.pose === 'sleeping'
-
-			if (!isSleeping) {
-				this.mode.setMode('idling')
-			}
+			// Always set mode to idling when loading state (sleeping mode removed)
+			this.mode.setMode('idling')
 		}
 		if (state.chatHistory) {
 			this.chat.loadState(state.chatHistory)
@@ -1091,6 +1090,9 @@ export class FairyAgent {
 			throw new Error('Editor not ready')
 		}
 
+		// Reset the leader agent to clear all previous context (chat history, todos, lints, etc.)
+		this.reset()
+
 		// Get all agents and find the follower (should be exactly 1 other agent)
 		const allAgents = this.fairyApp.agents.getAgents()
 		const followerAgents = allAgents.filter(
@@ -1111,6 +1113,10 @@ export class FairyAgent {
 
 		// Create a duo project
 		const follower = followerAgents[0]
+
+		// Reset the follower agent to clear all previous context
+		follower.reset()
+
 		const newProjectId = uniqueId(5)
 		const newProject: FairyProject = {
 			id: toProjectId(newProjectId),
@@ -1157,6 +1163,16 @@ export class FairyAgent {
 		const partnerId = follower.id
 		const duoPrompt = `You are collaborating with your partner on a duo project. You are the leader of the duo. You have been instructed to do this project:
 ${instruction}.
+
+CRITICAL CONSTRAINTS - READ CAREFULLY:
+- Draw ONLY what is EXPLICITLY asked in the instruction above. Nothing more.
+- Do NOT add decorative elements (no backgrounds, borders, shadows, or embellishments).
+- Do NOT interpret or expand the scope beyond the literal request.
+- Do NOT add "nice to have" features or improvements.
+- If asked to "draw a circle", draw ONLY a circle - no colors unless specified, no fill unless specified, nothing else.
+- Complete the task as LITERALLY as possible.
+- When in doubt, do LESS, not more.
+
 A project has automatically been created, but you need to start it yourself. You have been placed into duo orchestrator mode. You are working together with your partner to complete this project. Your partner is:
 - name: ${partnerName} (id: ${partnerId})
 You are to complete the project by orchestrating your partner. You can ONLY assign tasks to your partner - you cannot work on tasks yourself. As the leader of the duo, your responsibility is to plan the project, create tasks, and direct your partner to execute them sequentially. Make sure to give the approximate locations of the work to be done, if relevant, in order to make sure the tasks are clear and well-positioned.`

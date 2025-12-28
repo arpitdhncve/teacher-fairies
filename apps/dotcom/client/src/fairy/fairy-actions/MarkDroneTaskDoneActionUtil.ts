@@ -61,5 +61,25 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 			}
 		)
 		this.agent.interrupt({ mode: 'standing-by', input: null })
+
+		// Wake up the leader (duo-orchestrator) to distribute the next task
+		const project = this.agent.getProject()
+		if (project) {
+			const leaderMember = project.members.find((m) => m.role === 'duo-orchestrator')
+			if (leaderMember) {
+				const leaderAgent = this.agent.fairyApp.agents
+					.getAgents()
+					.find((a) => a.id === leaderMember.id)
+				if (leaderAgent && leaderAgent.mode.getMode() === 'duo-orchestrating-waiting') {
+					// Schedule the leader to continue - this will trigger onPromptStart which
+					// transitions to duo-orchestrating-active, then onPromptEnd distributes next task
+					leaderAgent.schedule({
+						agentMessages: [
+							`Task "${currentTask.title}" has been completed by your partner. Continue with the next task if available.`,
+						],
+					})
+				}
+			}
+		}
 	}
 }

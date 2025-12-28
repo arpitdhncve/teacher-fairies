@@ -1,6 +1,5 @@
 import { AgentAction, AgentPrompt, Streaming } from '@tldraw/fairy-shared'
 import { DurableObject } from 'cloudflare:workers'
-import { INTERNAL_BASE_URL } from '../constants'
 import { Environment } from '../environment'
 import { AgentService } from './AgentService'
 
@@ -18,40 +17,11 @@ export class AgentDurableObject extends DurableObject<Environment> {
 	}
 
 	private async getRateLimitError(
-		userId: string,
-		userStub: ReturnType<Environment['TL_USER']['get']>,
-		userIsAdmin: boolean
+		_userId: string,
+		_userStub: ReturnType<Environment['TL_USER']['get']>,
+		_userIsAdmin: boolean
 	): Promise<Response | null> {
-		// Admins bypass rate limits
-		if (userIsAdmin) return null
-
-		const checkRes = await userStub.fetch(
-			`${INTERNAL_BASE_URL}/app/${userId}/fairy/check-rate-limit`,
-			{
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-			}
-		)
-
-		if (!checkRes.ok) {
-			try {
-				const errorData = (await checkRes.json()) as { error: string }
-				console.error('Rate limit check failed:', errorData.error)
-				return new Response(
-					JSON.stringify({
-						error: errorData.error,
-					}),
-					{ status: checkRes.status, headers: { 'Content-Type': 'application/json' } }
-				)
-			} catch (parseError) {
-				console.error('Failed to parse rate limit error response:', parseError)
-				return new Response(JSON.stringify({ error: 'Rate limit check failed' }), {
-					status: 503,
-					headers: { 'Content-Type': 'application/json' },
-				})
-			}
-		}
-
+		// Rate limit check disabled - always allow requests
 		return null
 	}
 
