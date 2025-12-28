@@ -2,7 +2,7 @@ import { CreateDuoTaskAction, Streaming, createAgentActionInfo } from '@tldraw/f
 import { AgentHelpers } from '../fairy-agent/AgentHelpers'
 import { AgentActionUtil } from './AgentActionUtil'
 
-// Creates a task for a duo project with a specifiable assignedTo id
+// Creates a task for a duo project - now queues tasks for sequential distribution
 export class CreateDuoTaskActionUtil extends AgentActionUtil<CreateDuoTaskAction> {
 	static override type = 'create-duo-task' as const
 
@@ -37,8 +37,6 @@ export class CreateDuoTaskActionUtil extends AgentActionUtil<CreateDuoTaskAction
 			return
 		}
 
-		// todo don't allow them to assign to themselves for now
-
 		const bounds = helpers.removeOffsetFromBox({
 			x: action.x,
 			y: action.y,
@@ -46,18 +44,25 @@ export class CreateDuoTaskActionUtil extends AgentActionUtil<CreateDuoTaskAction
 			h: action.h,
 		})
 
-		this.agent.fairyApp.tasks.createTask({
-			id: action.taskId,
+		// Queue the task in plannedTasks for sequential distribution
+		// The mode handler will distribute tasks one-by-one
+		const plannedTask = {
+			tempId: action.taskId,
 			title: action.title,
 			text: action.text,
-			assignedTo: action.assignedTo,
-			projectId: project.id,
-			status: 'todo',
-			pageId: this.agent.editor.getCurrentPageId(),
 			x: bounds.x,
 			y: bounds.y,
 			w: bounds.w,
 			h: bounds.h,
+		}
+
+		const existingPlannedTasks = project.plannedTasks ?? []
+		this.agent.fairyApp.projects.updateProject(project.id, {
+			plannedTasks: [...existingPlannedTasks, plannedTask],
 		})
+
+		console.log(
+			`[CreateDuoTask] Queued task "${action.title}" (${existingPlannedTasks.length + 1} total planned)`
+		)
 	}
 }

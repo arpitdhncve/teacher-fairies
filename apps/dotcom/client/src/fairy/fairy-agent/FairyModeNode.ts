@@ -1,4 +1,5 @@
 import { AgentRequest, FairyModeDefinition, FairyTask } from '@tldraw/fairy-shared'
+import { Box } from 'tldraw'
 import { FairyAgent } from './FairyAgent'
 
 function startPromptTimer(agent: FairyAgent): void {
@@ -246,6 +247,89 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 				return
 			}
 
+			// Check if we have planned tasks to distribute
+			const plannedTasks = project.plannedTasks ?? []
+			const currentIndex = project.currentPlanIndex ?? 0
+
+			if (plannedTasks.length > 0 && currentIndex < plannedTasks.length) {
+				const nextTask = plannedTasks[currentIndex]
+				const partner = project.members.find((m) => m.id !== agent.id)
+
+				if (nextTask && partner) {
+					// Create the actual task from the planned task
+					const taskId = `task-${currentIndex + 1}` as any // Simple sequential ID
+					agent.fairyApp.tasks.createTask({
+						id: taskId,
+						title: nextTask.title,
+						text: nextTask.text,
+						assignedTo: partner.id,
+						projectId: project.id,
+						status: 'todo',
+						pageId: agent.editor.getCurrentPageId(),
+						x: nextTask.x,
+						y: nextTask.y,
+						w: nextTask.w,
+						h: nextTask.h,
+					})
+
+					// Update the index
+					agent.fairyApp.projects.updateProject(project.id, {
+						currentPlanIndex: currentIndex + 1,
+					})
+
+					console.log(
+						`[DuoOrchestrating] Distributing task ${currentIndex + 1}/${plannedTasks.length}: "${nextTask.title}"`
+					)
+
+					// Get the partner agent
+					const partnerAgent = agent.fairyApp.agents
+						.getAgents()
+						.find((a: FairyAgent) => a.id === partner.id)
+
+					if (partnerAgent) {
+						// Assign and start the task directly (same logic as DirectToStartDuoTaskActionUtil)
+						const allAgents = agent.fairyApp.agents.getAgents()
+						agent.fairyApp.tasks.assignFairyToTask(taskId, partner.id, allAgents)
+						agent.fairyApp.tasks.setTaskStatus(taskId, 'in-progress')
+
+						const leaderFirstName = agent.getConfig().name?.split(' ')[0] ?? ''
+						const task = agent.fairyApp.tasks.getTaskById(taskId)
+
+						const partnerInput: Partial<AgentRequest> = {
+							agentMessages: [
+								`You have been asked to complete task ${taskId}. Please complete it.`,
+							],
+							userMessages: [
+								`Asked by ${leaderFirstName} to do${task?.title ? `: ${task.title}` : ' a task'}`,
+							],
+							source: 'other-agent',
+						}
+						if (task) {
+							partnerInput.bounds = { x: task.x, y: task.y, w: task.w, h: task.h }
+							partnerAgent.position.moveTo(Box.From(partnerInput.bounds).center)
+						}
+
+						partnerAgent.interrupt({ mode: 'working-drone', input: partnerInput })
+
+						// Enter waiting mode to wait for the partner to complete the task
+						agent.mode.setMode('duo-orchestrating-waiting')
+					}
+					return
+				}
+			}
+
+			// If we have planned tasks and all have been distributed, check completion
+			if (plannedTasks.length > 0 && currentIndex >= plannedTasks.length) {
+				const projectTasks = agent.fairyApp.tasks.getTasksByProjectId(project.id)
+				const incompleteTasks = projectTasks.filter((task: FairyTask) => task.status !== 'done')
+
+				if (incompleteTasks.length === 0) {
+					agent.schedule('All planned tasks have been completed. End the duo project.')
+					return
+				}
+			}
+
+			// Original logic for waiting on partner
 			if (agent.waits.isWaiting()) {
 				const partner = project.members.find((member) => member.id !== agent.id)
 				if (!partner) {
@@ -285,14 +369,14 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 					return
 				}
 
-				if (projectTasks.length === 0) {
+				if (projectTasks.length === 0 && plannedTasks.length === 0) {
 					agent.schedule(
 						'There are no tasks created for the project yet. Consider creating tasks and directing your partner to start a task.'
 					)
 					return
 				}
 
-				if (completedTasks.length === projectTasks.length) {
+				if (completedTasks.length === projectTasks.length && projectTasks.length > 0) {
 					agent.schedule('All tasks have been completed. You may end the project.')
 					return
 				}
