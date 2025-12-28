@@ -370,23 +370,22 @@ export class FairyAgent {
 			this.gesture.reset()
 
 			this.$fairyEntity.update((entity) => {
+				// Override sleeping pose with idle, since sleeping mode is removed
+				const loadedPose = state.fairyEntity?.pose ?? entity.pose
+				const pose = loadedPose === 'sleeping' ? 'idle' : loadedPose
 				return {
 					...entity,
 					flipX: state.fairyEntity?.flipX ?? entity.flipX,
 					currentPageId: state.fairyEntity?.currentPageId ?? entity.currentPageId,
 					isSelected: state.fairyEntity?.isSelected ?? entity.isSelected,
-					pose: state.fairyEntity?.pose ?? entity.pose,
+					pose,
 					velocity: { x: 0, y: 0 },
 					gesture: null,
 				}
 			})
-			const entity = this.$fairyEntity.get()
 
-			const isSleeping = entity.pose === 'sleeping'
-
-			if (!isSleeping) {
-				this.mode.setMode('idling')
-			}
+			// Always set mode to idling when loading state (sleeping mode removed)
+			this.mode.setMode('idling')
 		}
 		if (state.chatHistory) {
 			this.chat.loadState(state.chatHistory)
@@ -1091,6 +1090,9 @@ export class FairyAgent {
 			throw new Error('Editor not ready')
 		}
 
+		// Reset the leader agent to clear all previous context (chat history, todos, lints, etc.)
+		this.reset()
+
 		// Get all agents and find the follower (should be exactly 1 other agent)
 		const allAgents = this.fairyApp.agents.getAgents()
 		const followerAgents = allAgents.filter(
@@ -1111,6 +1113,10 @@ export class FairyAgent {
 
 		// Create a duo project
 		const follower = followerAgents[0]
+
+		// Reset the follower agent to clear all previous context
+		follower.reset()
+
 		const newProjectId = uniqueId(5)
 		const newProject: FairyProject = {
 			id: toProjectId(newProjectId),
