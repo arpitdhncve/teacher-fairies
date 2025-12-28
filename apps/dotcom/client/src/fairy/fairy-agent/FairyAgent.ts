@@ -262,7 +262,7 @@ export class FairyAgent {
 			position: AgentHelpers.RoundVec(spawnPoint),
 			flipX: Math.random() < 0.5,
 			isSelected: false,
-			pose: 'sleeping',
+			pose: 'idle',
 			gesture: null,
 			currentPageId: editor.getCurrentPageId(),
 			velocity: { x: 0, y: 0 },
