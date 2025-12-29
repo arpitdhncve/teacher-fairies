@@ -39,6 +39,12 @@ export class EndDuoProjectActionUtil extends AgentActionUtil<EndDuoProjectAction
 
 			// Schedule review for the leader to examine the completed work
 			const viewportBounds = this.agent.editor.getViewportPageBounds()
+
+			// Add original prompt reminder
+			const originalPromptReminder = project.originalPrompt
+				? `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📋 ORIGINAL USER REQUEST:\n"${project.originalPrompt}"\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nYou MUST verify the drawing matches this request EXACTLY.\n`
+				: ''
+
 			this.agent.schedule({
 				bounds: {
 					x: viewportBounds.x,
@@ -47,19 +53,41 @@ export class EndDuoProjectActionUtil extends AgentActionUtil<EndDuoProjectAction
 					h: viewportBounds.h,
 				},
 				agentMessages: [
-					`Before ending the project, perform a final review of the completed work on the canvas.
+					`Before ending the project, perform a STRICT final review of the completed work.
+${originalPromptReminder}
+REVIEW CHECKLIST - BE VERY STRICT:
 
-Review checklist:
-1. COMPLETENESS: Verify that everything asked in the original prompt has been done. Nothing should be missing.
-2. NO EXTRAS: Ensure nothing extra was added beyond what was asked. Only what was requested should be present.
-3. LAYOUT QUALITY: Check for overlapping elements, text readability problems, or layout issues.
+✓ 1. EXACT MATCH
+   - Does the drawing contain EXACTLY what was asked for?
+   - Nothing extra that wasn't requested?
+   - Nothing missing from the request?
 
-If you find any problems:
-- Create a correction task for your partner using create-duo-task
-- Direct them to fix the issues using direct-to-start-duo-task
-- Wait for them to complete the fix
+✓ 2. READABILITY
+   - Is ALL text clearly readable?
+   - Are font sizes appropriate?
+   - Is text contrast sufficient?
 
-If everything looks good and matches the original request exactly, proceed to end the project.`,
+✓ 3. ALIGNMENT
+   - Are elements properly aligned?
+   - Is spacing consistent?
+   - Are things positioned correctly?
+
+✓ 4. LAYOUT QUALITY
+   - No overlapping elements?
+   - Proper spacing between items?
+   - Professional appearance?
+
+✓ 5. ACCURACY
+   - Are numbers/labels/text correct?
+   - Are colors/styles as requested?
+
+IF YOU FIND ANY ISSUES:
+- Use create-duo-task to create a correction task
+- Use direct-to-start-duo-task to assign it to your partner
+- Wait for completion before ending
+
+IF EVERYTHING MATCHES THE ORIGINAL REQUEST EXACTLY:
+- Call end-duo-project again to complete`,
 				],
 			})
 

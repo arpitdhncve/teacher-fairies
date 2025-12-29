@@ -7,21 +7,26 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 	static override type = 'mark-my-task-done' as const
 
 	override getInfo(action: Streaming<MarkDroneTaskDoneAction>) {
-		// Look for in-progress task first, then fall back to most recent done task
-		// (getInfo may be called after applyAction has already marked the task done)
+		// Look for in-progress tasks first, then fall back to done tasks
+		// (getInfo may be called after applyAction has already marked the tasks done)
 		const currentWork = this.agent.getWork()
-		const currentTask =
-			currentWork.tasks.find((task) => task.status === 'in-progress') ??
-			currentWork.tasks.find((task) => task.status === 'done')
+		const inProgressTasks = currentWork.tasks.filter((task) => task.status === 'in-progress')
+		const doneTasks = currentWork.tasks.filter((task) => task.status === 'done')
+		const tasks = inProgressTasks.length > 0 ? inProgressTasks : doneTasks
 
-		const taskTitle = currentTask?.title
+		const taskCount = tasks.length
+		const isPlural = taskCount !== 1
+		const taskTitle = tasks[0]?.title
+
 		return createAgentActionInfo({
 			icon: 'note',
-			description: action.complete ? `Completed task` : 'Completing task...',
+			description: action.complete
+				? `Completed ${taskCount} task${isPlural ? 's' : ''}`
+				: `Completing task${isPlural ? 's' : ''}...`,
 			ircMessage: action.complete
-				? taskTitle
+				? taskCount === 1 && taskTitle
 					? `I completed a task: ${taskTitle}`
-					: `I completed a task.`
+					: `I completed ${taskCount} task${isPlural ? 's' : ''}.`
 				: null,
 			pose: 'writing',
 			canGroup: () => false,
@@ -32,17 +37,29 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 		if (!action.complete) return
 
 		const currentWork = this.agent.getWork()
-		const currentTask = currentWork.tasks.find((task) => task.status === 'in-progress')
-		if (!currentTask) {
+		// Mark ALL in-progress tasks as done (follower completes all assigned tasks in one session)
+		const inProgressTasks = currentWork.tasks.filter((task) => task.status === 'in-progress')
+		if (inProgressTasks.length === 0) {
 			this.agent.interrupt({
 				input:
 					'You are not currently working on any task. You can only mark a task as done if you are actively working on it.',
 			})
 			return
 		}
-		const currentTaskId = currentTask.id
 
-		this.agent.fairyApp.tasks.setTaskStatusAndNotify(currentTaskId, 'done')
+		// Mark all in-progress tasks as done
+		inProgressTasks.forEach((task) => {
+			this.agent.fairyApp.tasks.setTaskStatusAndNotify(task.id, 'done')
+		})
+
+		// Build completion message listing all completed tasks
+		const taskSummary =
+			inProgressTasks.length === 1
+				? `I just finished the task.\nID: "${inProgressTasks[0].id}"\nTitle: "${inProgressTasks[0].title}"\nDescription: "${inProgressTasks[0].text}".`
+				: `I just finished ${inProgressTasks.length} tasks:\n${inProgressTasks
+						.map((t) => `- ID: "${t.id}" | Title: "${t.title}"`)
+						.join('\n')}`
+
 		this.agent.chat.push(
 			{
 				id: uniqueId(),
@@ -56,7 +73,7 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 				type: 'prompt',
 				promptSource: 'self',
 				memoryLevel: 'project',
-				agentFacingMessage: `I just finished the task.\nID: "${currentTaskId}"\nTitle: "${currentTask.title}"\nDescription: "${currentTask.text}".`,
+				agentFacingMessage: taskSummary,
 				userFacingMessage: null,
 			}
 		)
@@ -73,10 +90,13 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 				if (leaderAgent && leaderAgent.mode.getMode() === 'duo-orchestrating-waiting') {
 					// Schedule the leader to continue - this will trigger onPromptStart which
 					// transitions to duo-orchestrating-active, then onPromptEnd distributes next task
+					const completionMessage =
+						inProgressTasks.length === 1
+							? `Task "${inProgressTasks[0].title}" has been completed by your partner.`
+							: `${inProgressTasks.length} tasks have been completed by your partner.`
+
 					leaderAgent.schedule({
-						agentMessages: [
-							`Task "${currentTask.title}" has been completed by your partner. Continue with the next task if available.`,
-						],
+						agentMessages: [completionMessage + ' Continue with the next task if available.'],
 					})
 				}
 			}

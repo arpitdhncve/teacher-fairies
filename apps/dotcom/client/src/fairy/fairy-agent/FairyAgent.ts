@@ -1129,6 +1129,7 @@ export class FairyAgent {
 			],
 			plan: '',
 			softDeleted: false,
+			originalPrompt: instruction,
 		}
 
 		// Clean up any soft-deleted projects and add the new one
