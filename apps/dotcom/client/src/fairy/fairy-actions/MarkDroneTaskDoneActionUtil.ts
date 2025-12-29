@@ -77,28 +77,68 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 				userFacingMessage: null,
 			}
 		)
+
+		// Check for remaining TODO tasks and pick next batch
+		const BATCH_SIZE = 3
+		const project = this.agent.getProject()
+		if (!project) {
+			this.agent.interrupt({ mode: 'standing-by', input: null })
+			return
+		}
+
+		// Check for remaining TODO tasks assigned to this follower
+		const allMyTasks = this.agent.fairyApp.tasks
+			.getTasksByProjectId(project.id)
+			.filter((task) => task.assignedTo === this.agent.id)
+		const remainingTodoTasks = allMyTasks.filter((task) => task.status === 'todo')
+
+		if (remainingTodoTasks.length > 0) {
+			// Pick next batch of tasks
+			const nextBatch = remainingTodoTasks.slice(0, BATCH_SIZE)
+
+			// Mark them as in-progress
+			nextBatch.forEach((task) => {
+				this.agent.fairyApp.tasks.setTaskStatus(task.id, 'in-progress')
+			})
+
+			// Build task list for the message
+			const taskDescriptions = nextBatch
+				.map((task) => `- ${task.title}${task.text ? `: ${task.text}` : ''}`)
+				.join('\n')
+
+			console.log(
+				`[MarkTaskDone] Picking next batch of ${nextBatch.length} tasks ` +
+					`(${remainingTodoTasks.length - nextBatch.length} remaining after this batch)`
+			)
+
+			// Continue working on next batch (don't go to standing-by)
+			this.agent.schedule({
+				agentMessages: [
+					`Completed previous batch. Continue with next ${nextBatch.length} task(s):\n\n${taskDescriptions}`,
+				],
+				bounds: { x: nextBatch[0].x, y: nextBatch[0].y, w: nextBatch[0].w, h: nextBatch[0].h },
+			})
+			return
+		}
+
+		// No more tasks - go to standing-by and wake leader
 		this.agent.interrupt({ mode: 'standing-by', input: null })
 
-		// Wake up the leader (duo-orchestrator) to distribute the next task
-		const project = this.agent.getProject()
-		if (project) {
-			const leaderMember = project.members.find((m) => m.role === 'duo-orchestrator')
-			if (leaderMember) {
-				const leaderAgent = this.agent.fairyApp.agents
-					.getAgents()
-					.find((a) => a.id === leaderMember.id)
-				if (leaderAgent && leaderAgent.mode.getMode() === 'duo-orchestrating-waiting') {
-					// Schedule the leader to continue - this will trigger onPromptStart which
-					// transitions to duo-orchestrating-active, then onPromptEnd distributes next task
-					const completionMessage =
-						inProgressTasks.length === 1
-							? `Task "${inProgressTasks[0].title}" has been completed by your partner.`
-							: `${inProgressTasks.length} tasks have been completed by your partner.`
+		// Wake up the leader (duo-orchestrator)
+		const leaderMember = project.members.find((m) => m.role === 'duo-orchestrator')
+		if (leaderMember) {
+			const leaderAgent = this.agent.fairyApp.agents
+				.getAgents()
+				.find((a) => a.id === leaderMember.id)
+			if (leaderAgent && leaderAgent.mode.getMode() === 'duo-orchestrating-waiting') {
+				const completionMessage =
+					inProgressTasks.length === 1
+						? `Task "${inProgressTasks[0].title}" has been completed by your partner.`
+						: `${inProgressTasks.length} tasks have been completed by your partner.`
 
-					leaderAgent.schedule({
-						agentMessages: [completionMessage + ' Continue with the next task if available.'],
-					})
-				}
+				leaderAgent.schedule({
+					agentMessages: [completionMessage + ' All tasks are complete.'],
+				})
 			}
 		}
 	}

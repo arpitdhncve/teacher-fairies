@@ -82,8 +82,8 @@ REVIEW CHECKLIST - BE VERY STRICT:
    - Are colors/styles as requested?
 
 IF YOU FIND ANY ISSUES:
-- Use create-duo-task to create a correction task
-- Use direct-to-start-duo-task to assign it to your partner
+- Use create-duo-task to create a correction task for EACH new issue you see
+- Use direct-to-start-duo-task to assign them to your partner
 - Wait for completion before ending
 
 IF EVERYTHING MATCHES THE ORIGINAL REQUEST EXACTLY:

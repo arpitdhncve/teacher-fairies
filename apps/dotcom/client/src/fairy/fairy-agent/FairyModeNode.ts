@@ -284,11 +284,15 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 							createdTaskIds.push(taskId)
 						})
 
-						// Assign and start ALL tasks
+						// Assign all tasks but only mark first BATCH_SIZE as in-progress
+						const BATCH_SIZE = 3
 						const allAgents = agent.fairyApp.agents.getAgents()
-						createdTaskIds.forEach((taskId) => {
+						createdTaskIds.forEach((taskId, index) => {
 							agent.fairyApp.tasks.assignFairyToTask(taskId, partner.id, allAgents)
-							agent.fairyApp.tasks.setTaskStatus(taskId, 'in-progress')
+							// Only first BATCH_SIZE tasks are in-progress, rest stay as todo
+							if (index < BATCH_SIZE) {
+								agent.fairyApp.tasks.setTaskStatus(taskId, 'in-progress')
+							}
 						})
 
 						// Update index to mark all tasks as distributed
@@ -308,9 +312,10 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 						const leaderFirstName = agent.getConfig().name?.split(' ')[0] ?? ''
 
 						// Interrupt follower with NEW tasks
+						const initialBatchSize = Math.min(BATCH_SIZE, undistributedTasks.length)
 						const partnerInput: Partial<AgentRequest> = {
 							agentMessages: [
-								`You have been assigned ${undistributedTasks.length} ${undistributedTasks.length === 1 ? 'task' : 'tasks'} to complete. Work on ${undistributedTasks.length === 1 ? 'it' : 'them'} in order:\n\n${taskDescriptions}\n\nComplete all tasks in this single session.`,
+								`You have been assigned ${undistributedTasks.length} ${undistributedTasks.length === 1 ? 'task' : 'tasks'} total. Work on them in batches of ${BATCH_SIZE}. Start with the first ${initialBatchSize} task(s) that are marked in-progress:\n\n${taskDescriptions}`,
 							],
 							userMessages: [
 								`Asked by ${leaderFirstName} to complete ${undistributedTasks.length} task${undistributedTasks.length > 1 ? 's' : ''}`,
