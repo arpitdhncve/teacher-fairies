@@ -482,6 +482,68 @@ function DataHandler({
 				return
 			}
 
+			// --- DRAW INTERRUPT: Stop current project when user speaks ---
+			if (topic === 'draw.interrupt') {
+				const payloadText = new TextDecoder().decode(payload)
+				let decoded: any
+
+				try {
+					decoded = JSON.parse(payloadText)
+				} catch (parseErr) {
+					console.error('Failed to parse draw.interrupt payload:', parseErr)
+					return
+				}
+
+				console.log('[ChatPanel] Received draw.interrupt:', decoded)
+
+				// Get all fairies from the FairyApp
+				const fairyApp = (agent as any)?.fairyApp
+				const allAgents = fairyApp?.agents?.getAgents() || [agent]
+
+				// Interrupt all agents and cancel their projects
+				for (const agentInstance of allAgents) {
+					try {
+						// Get the agent's current project
+						const project = agentInstance.getProject?.()
+
+						// Interrupt the agent to idling mode
+						if (typeof agentInstance.interrupt === 'function') {
+							agentInstance.interrupt({ mode: 'idling', input: null })
+							console.log(`[ChatPanel] Interrupted agent ${agentInstance.id} to idling mode`)
+						}
+
+						// Delete project if present
+						if (project && fairyApp?.projects) {
+							fairyApp.projects.deleteProjectAndAssociatedTasks(project.id)
+							console.log(`[ChatPanel] Deleted project ${project.id}`)
+						}
+					} catch (err) {
+						console.error(`[ChatPanel] Error interrupting agent ${agentInstance.id}:`, err)
+					}
+				}
+
+				// Clear all pending draw requests and send cancelled response for each
+				pendingDrawRequestsRef.current.forEach((pendingRequest, agentId) => {
+					console.log(
+						`[ChatPanel] Cancelling pending draw request ${pendingRequest.request_id} for agent ${agentId}`
+					)
+					room.localParticipant.publishData(
+						new TextEncoder().encode(
+							JSON.stringify({
+								request_id: pendingRequest.request_id,
+								ok: false,
+								error: 'Interrupted by user',
+								interrupted: true,
+							})
+						),
+						{ topic: 'draw.response' }
+					)
+				})
+				pendingDrawRequestsRef.current.clear()
+
+				return
+			}
+
 			// --- UI Messages (same) ---
 			if (topic === 'ui.speak' || topic === 'ui.question') {
 				const payloadText = new TextDecoder().decode(payload)
@@ -640,7 +702,7 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 			}
 
 			setLkToken(tokenToUse)
-			setLkUrl('wss://agent-12321-q7tzemb8.livekit.cloud')
+			setLkUrl('wss://project-123-xf6t2jp0.livekit.cloud')
 			setLkConnect(true)
 		} catch {
 			setError('Failed to start learning session')
