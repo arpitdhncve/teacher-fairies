@@ -22,6 +22,7 @@ export interface FairyProject {
 	plannedTasks?: PlannedTaskDefinition[] // Queue of planned tasks for two-phase execution
 	currentPlanIndex?: number // Index of next task to create from plannedTasks
 	planningComplete?: boolean // Flag to indicate all tasks are planned and ready for distribution
+	originalPrompt?: string // Store the original draw.request for use in reviews
 }
 
 export interface FairyProjectMember {

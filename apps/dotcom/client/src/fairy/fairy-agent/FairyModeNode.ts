@@ -251,67 +251,92 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 			const plannedTasks = project.plannedTasks ?? []
 			const currentIndex = project.currentPlanIndex ?? 0
 
+			// BATCH DISTRIBUTION: Create and assign undistributed tasks
+			// This handles both initial batch (currentIndex === 0) and additional tasks added later
 			if (plannedTasks.length > 0 && currentIndex < plannedTasks.length) {
-				const nextTask = plannedTasks[currentIndex]
 				const partner = project.members.find((m) => m.id !== agent.id)
 
-				if (nextTask && partner) {
-					// Create the actual task from the planned task
-					const taskId = `task-${currentIndex + 1}` as any // Simple sequential ID
-					agent.fairyApp.tasks.createTask({
-						id: taskId,
-						title: nextTask.title,
-						text: nextTask.text,
-						assignedTo: partner.id,
-						projectId: project.id,
-						status: 'todo',
-						pageId: agent.editor.getCurrentPageId(),
-						x: nextTask.x,
-						y: nextTask.y,
-						w: nextTask.w,
-						h: nextTask.h,
-					})
-
-					// Update the index
-					agent.fairyApp.projects.updateProject(project.id, {
-						currentPlanIndex: currentIndex + 1,
-					})
-
-					console.log(
-						`[DuoOrchestrating] Distributing task ${currentIndex + 1}/${plannedTasks.length}: "${nextTask.title}"`
-					)
-
-					// Get the partner agent
+				if (partner) {
 					const partnerAgent = agent.fairyApp.agents
 						.getAgents()
 						.find((a: FairyAgent) => a.id === partner.id)
 
 					if (partnerAgent) {
-						// Assign and start the task directly (same logic as DirectToStartDuoTaskActionUtil)
+						// Create only the NEW undistributed tasks (from currentIndex onwards)
+						const createdTaskIds: any[] = []
+						const undistributedTasks = plannedTasks.slice(currentIndex)
+						undistributedTasks.forEach((plannedTask, localIndex) => {
+							// Use the tempId from the planned task so await-duo-tasks-completion works correctly
+							const taskId = plannedTask.tempId as any
+							agent.fairyApp.tasks.createTask({
+								id: taskId,
+								title: plannedTask.title,
+								text: plannedTask.text,
+								assignedTo: partner.id,
+								projectId: project.id,
+								status: 'todo',
+								pageId: agent.editor.getCurrentPageId(),
+								x: plannedTask.x,
+								y: plannedTask.y,
+								w: plannedTask.w,
+								h: plannedTask.h,
+							})
+							createdTaskIds.push(taskId)
+						})
+
+						// Assign all tasks but only mark first BATCH_SIZE as in-progress
+						const BATCH_SIZE = 3
 						const allAgents = agent.fairyApp.agents.getAgents()
-						agent.fairyApp.tasks.assignFairyToTask(taskId, partner.id, allAgents)
-						agent.fairyApp.tasks.setTaskStatus(taskId, 'in-progress')
+						createdTaskIds.forEach((taskId, index) => {
+							agent.fairyApp.tasks.assignFairyToTask(taskId, partner.id, allAgents)
+							// Only first BATCH_SIZE tasks are in-progress, rest stay as todo
+							if (index < BATCH_SIZE) {
+								agent.fairyApp.tasks.setTaskStatus(taskId, 'in-progress')
+							}
+						})
+
+						// Update index to mark all tasks as distributed
+						agent.fairyApp.projects.updateProject(project.id, {
+							currentPlanIndex: plannedTasks.length,
+						})
+
+						console.log(
+							`[DuoOrchestrating] Distributing ${undistributedTasks.length} new task(s) to follower (${currentIndex} already distributed)`
+						)
+
+						// Build task list description for follower (only NEW tasks)
+						const taskDescriptions = undistributedTasks
+							.map((task) => `- ${task.title}${task.text ? `: ${task.text}` : ''}`)
+							.join('\n')
 
 						const leaderFirstName = agent.getConfig().name?.split(' ')[0] ?? ''
-						const task = agent.fairyApp.tasks.getTaskById(taskId)
 
+						// Interrupt follower with NEW tasks
+						const initialBatchSize = Math.min(BATCH_SIZE, undistributedTasks.length)
 						const partnerInput: Partial<AgentRequest> = {
 							agentMessages: [
-								`You have been asked to complete task ${taskId}. Please complete it.`,
+								`You have been assigned ${undistributedTasks.length} ${undistributedTasks.length === 1 ? 'task' : 'tasks'} total. Work on them in batches of ${BATCH_SIZE}. Start with the first ${initialBatchSize} task(s) that are marked in-progress:\n\n${taskDescriptions}`,
 							],
 							userMessages: [
-								`Asked by ${leaderFirstName} to do${task?.title ? `: ${task.title}` : ' a task'}`,
+								`Asked by ${leaderFirstName} to complete ${undistributedTasks.length} task${undistributedTasks.length > 1 ? 's' : ''}`,
 							],
 							source: 'other-agent',
 						}
-						if (task) {
-							partnerInput.bounds = { x: task.x, y: task.y, w: task.w, h: task.h }
+
+						// Use the first undistributed task's position as starting point
+						if (undistributedTasks[0]) {
+							partnerInput.bounds = {
+								x: undistributedTasks[0].x,
+								y: undistributedTasks[0].y,
+								w: undistributedTasks[0].w,
+								h: undistributedTasks[0].h,
+							}
 							partnerAgent.position.moveTo(Box.From(partnerInput.bounds).center)
 						}
 
 						partnerAgent.interrupt({ mode: 'working-drone', input: partnerInput })
 
-						// Enter waiting mode to wait for the partner to complete the task
+						// Enter waiting mode to wait for the partner to complete ALL tasks
 						agent.mode.setMode('duo-orchestrating-waiting')
 					}
 					return
@@ -324,7 +349,9 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 				const incompleteTasks = projectTasks.filter((task: FairyTask) => task.status !== 'done')
 
 				if (incompleteTasks.length === 0) {
-					agent.schedule('All planned tasks have been completed. End the duo project.')
+					agent.schedule(
+						'All current tasks have been completed. Review if more work is needed: create next batch of tasks (max 3), or call end-duo-project if complete.'
+					)
 					return
 				}
 			}
@@ -377,7 +404,9 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 				}
 
 				if (completedTasks.length === projectTasks.length && projectTasks.length > 0) {
-					agent.schedule('All tasks have been completed. You may end the project.')
+					agent.schedule(
+						'All current tasks have been completed. Review if more work is needed: create next batch of tasks (max 3), or call end-duo-project if complete.'
+					)
 					return
 				}
 			}
