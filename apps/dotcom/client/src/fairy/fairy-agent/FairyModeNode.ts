@@ -349,7 +349,9 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 				const incompleteTasks = projectTasks.filter((task: FairyTask) => task.status !== 'done')
 
 				if (incompleteTasks.length === 0) {
-					agent.schedule('All planned tasks have been completed. End the duo project.')
+					agent.schedule(
+						'All current tasks have been completed. Review if more work is needed: create next batch of tasks (max 3), or call end-duo-project if complete.'
+					)
 					return
 				}
 			}
@@ -402,7 +404,9 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 				}
 
 				if (completedTasks.length === projectTasks.length && projectTasks.length > 0) {
-					agent.schedule('All tasks have been completed. You may end the project.')
+					agent.schedule(
+						'All current tasks have been completed. Review if more work is needed: create next batch of tasks (max 3), or call end-duo-project if complete.'
+					)
 					return
 				}
 			}

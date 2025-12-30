@@ -137,7 +137,10 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 						: `${inProgressTasks.length} tasks have been completed by your partner.`
 
 				leaderAgent.schedule({
-					agentMessages: [completionMessage + ' All tasks are complete.'],
+					agentMessages: [
+						completionMessage +
+							' Batch complete. Review what remains: if more work is needed, create the next batch of tasks (max 3). If all work is complete, call end-duo-project.',
+					],
 				})
 			}
 		}
