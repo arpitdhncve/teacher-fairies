@@ -288,15 +288,11 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 							createdTaskIds.push(taskId)
 						})
 
-						// Assign all tasks but only mark first BATCH_SIZE as in-progress
-						const BATCH_SIZE = 3
+						// Assign all tasks and mark them all as in-progress
 						const allAgents = agent.fairyApp.agents.getAgents()
-						createdTaskIds.forEach((taskId, index) => {
+						createdTaskIds.forEach((taskId) => {
 							agent.fairyApp.tasks.assignFairyToTask(taskId, partner.id, allAgents)
-							// Only first BATCH_SIZE tasks are in-progress, rest stay as todo
-							if (index < BATCH_SIZE) {
-								agent.fairyApp.tasks.setTaskStatus(taskId, 'in-progress')
-							}
+							agent.fairyApp.tasks.setTaskStatus(taskId, 'in-progress')
 						})
 
 						// Update index to mark all tasks as distributed
@@ -321,11 +317,10 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 
 						const leaderFirstName = agent.getConfig().name?.split(' ')[0] ?? ''
 
-						// Interrupt follower with NEW tasks
-						const initialBatchSize = Math.min(BATCH_SIZE, undistributedTasks.length)
+						// Interrupt follower with tasks
 						const partnerInput: Partial<AgentRequest> = {
 							agentMessages: [
-								`You have been assigned ${undistributedTasks.length} ${undistributedTasks.length === 1 ? 'task' : 'tasks'} total. Work on them in batches of ${BATCH_SIZE}. Start with the first ${initialBatchSize} task(s) that are marked in-progress:\n\n${taskDescriptions}`,
+								`You have been assigned ${undistributedTasks.length} ${undistributedTasks.length === 1 ? 'task' : 'tasks'}. Complete them all:\n\n${taskDescriptions}`,
 							],
 							userMessages: [
 								`Asked by ${leaderFirstName} to complete ${undistributedTasks.length} task${undistributedTasks.length > 1 ? 's' : ''}`,
@@ -360,7 +355,7 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 
 				if (incompleteTasks.length === 0) {
 					agent.schedule(
-						'All current tasks have been completed. Review if more work is needed: create next batch of tasks (max 3), or call end-duo-project if complete.'
+						'All current tasks have been completed. If more work is needed, create additional tasks. Otherwise, call end-duo-project to finish.'
 					)
 					return
 				}
@@ -415,7 +410,7 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 
 				if (completedTasks.length === projectTasks.length && projectTasks.length > 0) {
 					agent.schedule(
-						'All current tasks have been completed. Review if more work is needed: create next batch of tasks (max 3), or call end-duo-project if complete.'
+						'All current tasks have been completed. If more work is needed, create additional tasks. Otherwise, call end-duo-project to finish.'
 					)
 					return
 				}

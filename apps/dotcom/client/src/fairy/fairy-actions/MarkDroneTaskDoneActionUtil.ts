@@ -78,8 +78,7 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 			}
 		)
 
-		// Check for remaining TODO tasks and pick next batch
-		const BATCH_SIZE = 3
+		// Check for remaining TODO tasks and notify leader
 		const project = this.agent.getProject()
 		if (!project) {
 			this.agent.interrupt({ mode: 'standing-by', input: null })
@@ -93,30 +92,29 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 		const remainingTodoTasks = allMyTasks.filter((task) => task.status === 'todo')
 
 		if (remainingTodoTasks.length > 0) {
-			// Pick next batch of tasks
-			const nextBatch = remainingTodoTasks.slice(0, BATCH_SIZE)
-
-			// Mark them as in-progress
-			nextBatch.forEach((task) => {
+			// Mark all remaining TODO tasks as in-progress and continue working
+			remainingTodoTasks.forEach((task) => {
 				this.agent.fairyApp.tasks.setTaskStatus(task.id, 'in-progress')
 			})
 
 			// Build task list for the message
-			const taskDescriptions = nextBatch
+			const taskDescriptions = remainingTodoTasks
 				.map((task) => `- ${task.title}${task.text ? `: ${task.text}` : ''}`)
 				.join('\n')
 
-			console.log(
-				`[MarkTaskDone] Picking next batch of ${nextBatch.length} tasks ` +
-					`(${remainingTodoTasks.length - nextBatch.length} remaining after this batch)`
-			)
+			console.log(`[MarkTaskDone] Continuing with ${remainingTodoTasks.length} remaining tasks`)
 
-			// Continue working on next batch (don't go to standing-by)
+			// Continue working on remaining tasks
 			this.agent.schedule({
 				agentMessages: [
-					`Completed previous batch. Continue with next ${nextBatch.length} task(s):\n\n${taskDescriptions}`,
+					`Completed previous tasks. Continue with remaining ${remainingTodoTasks.length} task(s):\n\n${taskDescriptions}`,
 				],
-				bounds: { x: nextBatch[0].x, y: nextBatch[0].y, w: nextBatch[0].w, h: nextBatch[0].h },
+				bounds: {
+					x: remainingTodoTasks[0].x,
+					y: remainingTodoTasks[0].y,
+					w: remainingTodoTasks[0].w,
+					h: remainingTodoTasks[0].h,
+				},
 			})
 			return
 		}
@@ -139,7 +137,7 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 				leaderAgent.schedule({
 					agentMessages: [
 						completionMessage +
-							' Batch complete. Review what remains: if more work is needed, create the next batch of tasks (max 3). If all work is complete, call end-duo-project.',
+							' All assigned tasks complete. Your partner is ready for more work if needed, or call end-duo-project if all work is complete.',
 					],
 				})
 			}
