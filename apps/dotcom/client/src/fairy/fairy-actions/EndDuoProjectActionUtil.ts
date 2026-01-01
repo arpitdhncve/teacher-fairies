@@ -53,41 +53,55 @@ export class EndDuoProjectActionUtil extends AgentActionUtil<EndDuoProjectAction
 					h: viewportBounds.h,
 				},
 				agentMessages: [
-					`Before ending the project, perform a STRICT final review of the completed work.
+					`Before ending the project, perform a STRICT final review focusing on AESTHETICS and READABILITY.
 ${originalPromptReminder}
-REVIEW CHECKLIST - BE VERY STRICT:
 
-✓ 1. EXACT MATCH
-   - Does the drawing contain EXACTLY what was asked for?
-   - Nothing extra that wasn't requested?
-   - Nothing missing from the request?
+━━━━━━━━━━━ AESTHETIC REVIEW CHECKLIST ━━━━━━━━━━━
 
-✓ 2. READABILITY
-   - Is ALL text clearly readable?
-   - Are font sizes appropriate?
-   - Is text contrast sufficient?
+🎯 1. EXACT MATCH TO REQUEST
+   □ Contains EXACTLY what was asked - nothing extra, nothing missing
+   □ All requested elements are present
 
-✓ 3. ALIGNMENT
-   - Are elements properly aligned?
-   - Is spacing consistent?
-   - Are things positioned correctly?
+📖 2. READABILITY (CRITICAL)
+   □ ALL text is clearly legible - minimum 14px font size
+   □ Strong contrast between text and background (dark on light or light on dark)
+   □ Adequate line spacing (1.4-1.6x font size)
+   □ No text overlapping other elements
+   □ Clear visual hierarchy - headings larger than body text
 
-✓ 4. LAYOUT QUALITY
-   - No overlapping elements?
-   - Proper spacing between items?
-   - Professional appearance?
+🎨 3. COLOR & VISUAL HARMONY
+   □ Color palette is cohesive (max 3-4 colors)
+   □ Colors complement each other
+   □ Sufficient contrast for accessibility
+   □ Consistent color usage (same color = same meaning)
 
-✓ 5. ACCURACY
-   - Are numbers/labels/text correct?
-   - Are colors/styles as requested?
+📐 4. ALIGNMENT & SPACING
+   □ Elements are properly aligned (left, center, or right - be consistent)
+   □ Equal spacing between similar elements
+   □ Generous whitespace - elements should "breathe"
+   □ No cramped or cluttered areas
 
-IF YOU FIND ANY ISSUES:
-- Use create-duo-task to create a correction task for EACH new issue you see
-- Use direct-to-start-duo-task to assign them to your partner
-- Wait for completion before ending
+⚖️ 5. VISUAL BALANCE & HIERARCHY
+   □ Visual weight is balanced across the canvas
+   □ Most important elements are most prominent
+   □ Clear focal point exists
+   □ Size relationships make sense
 
-IF EVERYTHING MATCHES THE ORIGINAL REQUEST EXACTLY:
-- Call end-duo-project again to complete`,
+🔲 6. CONSISTENCY & POLISH
+   □ Similar elements styled identically (all buttons same style, all headers same size)
+   □ Consistent border widths and corner radii
+   □ Clean, crisp edges - no rough or pixelated elements
+   □ Professional, polished appearance
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+IF ANY AESTHETIC ISSUES FOUND:
+→ Use create-duo-task to create a SPECIFIC correction task for each issue
+→ Use direct-to-start-duo-task to assign to your partner
+→ Wait for completion before ending
+
+IF CANVAS IS BEAUTIFUL, READABLE, AND MATCHES REQUEST:
+→ Call end-duo-project again to complete`,
 				],
 			})
 

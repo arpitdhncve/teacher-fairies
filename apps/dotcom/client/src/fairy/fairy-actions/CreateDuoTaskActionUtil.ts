@@ -54,6 +54,10 @@ export class CreateDuoTaskActionUtil extends AgentActionUtil<CreateDuoTaskAction
 			y: bounds.y,
 			w: bounds.w,
 			h: bounds.h,
+			// Optional structured style hints
+			color: action.color,
+			fill: action.fill,
+			successCriteria: action.successCriteria,
 		}
 
 		const existingPlannedTasks = project.plannedTasks ?? []
