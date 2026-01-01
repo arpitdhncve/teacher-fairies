@@ -53,55 +53,104 @@ export class EndDuoProjectActionUtil extends AgentActionUtil<EndDuoProjectAction
 					h: viewportBounds.h,
 				},
 				agentMessages: [
-					`Before ending the project, perform a STRICT final review focusing on AESTHETICS and READABILITY.
+					`<final_review mode="EXTREMELY_STRICT">
+<instruction>
+Before ending the project, perform an EXTREMELY STRICT final review.
+You MUST examine EVERY element on the canvas and identify ALL issues.
+Do NOT proceed until you have verified each checklist item.
+</instruction>
+
+${
+	originalPromptReminder
+		? `<original_user_request critical="true">
 ${originalPromptReminder}
+Verify the drawing matches this request EXACTLY. Missing or extra elements = FAIL.
+</original_user_request>`
+		: ''
+}
 
-━━━━━━━━━━━ AESTHETIC REVIEW CHECKLIST ━━━━━━━━━━━
+<review_checklist note="ALL categories must pass. Any failure requires correction.">
 
-🎯 1. EXACT MATCH TO REQUEST
-   □ Contains EXACTLY what was asked - nothing extra, nothing missing
-   □ All requested elements are present
+<category name="EXACT_MATCH" priority="high">
+<description>The canvas must contain exactly what the user requested - nothing more, nothing less.</description>
+<fail_condition>Anything is missing from what the user asked for</fail_condition>
+<fail_condition>Extra elements were added that were not requested</fail_condition>
+<fail_condition>The user's intent was misinterpreted</fail_condition>
+</category>
 
-📖 2. READABILITY (CRITICAL)
-   □ ALL text is clearly legible - minimum 14px font size
-   □ Strong contrast between text and background (dark on light or light on dark)
-   □ Adequate line spacing (1.4-1.6x font size)
-   □ No text overlapping other elements
-   □ Clear visual hierarchy - headings larger than body text
+<category name="OVERLAP_AND_COLLISION" priority="critical">
+<description>No elements should overlap or collide. Every element must have breathing room.</description>
+<fail_condition>ANY shapes overlap unintentionally</fail_condition>
+<fail_condition>ANY text overlaps other text</fail_condition>
+<fail_condition>ANY text overlaps shapes or images</fail_condition>
+<fail_condition>Elements are touching or too close (minimum 10px gap required)</fail_condition>
+<fail_condition>Elements are cut off or extend beyond the visible canvas area</fail_condition>
+</category>
 
-🎨 3. COLOR & VISUAL HARMONY
-   □ Color palette is cohesive (max 3-4 colors)
-   □ Colors complement each other
-   □ Sufficient contrast for accessibility
-   □ Consistent color usage (same color = same meaning)
+<category name="TEXT_READABILITY" priority="critical" tolerance="zero">
+<description>All text must be immediately readable at first glance. This is non-negotiable.</description>
+<fail_condition>Any text is smaller than 16px font size</fail_condition>
+<fail_condition>Text color is too similar to background (HIGH contrast required)</fail_condition>
+<fail_condition>Text appears cramped or squeezed</fail_condition>
+<fail_condition>Line spacing is too tight</fail_condition>
+<fail_condition>Headings are not clearly larger than body text</fail_condition>
+<fail_condition>Important text is not immediately readable at first glance</fail_condition>
+</category>
 
-📐 4. ALIGNMENT & SPACING
-   □ Elements are properly aligned (left, center, or right - be consistent)
-   □ Equal spacing between similar elements
-   □ Generous whitespace - elements should "breathe"
-   □ No cramped or cluttered areas
+<category name="COLOR_AND_VISUAL_CLARITY" priority="high">
+<description>Colors should be harmonious, limited, and provide good contrast.</description>
+<fail_condition>More than 4 colors used (creates visual chaos)</fail_condition>
+<fail_condition>Colors clash or do not harmonize</fail_condition>
+<fail_condition>Low contrast makes elements hard to see</fail_condition>
+<fail_condition>Inconsistent color usage (same meaning should use same color)</fail_condition>
+</category>
 
-⚖️ 5. VISUAL BALANCE & HIERARCHY
-   □ Visual weight is balanced across the canvas
-   □ Most important elements are most prominent
-   □ Clear focal point exists
-   □ Size relationships make sense
+<category name="ALIGNMENT_AND_SPACING" priority="high">
+<description>Elements should be aligned consistently and have proper spacing.</description>
+<fail_condition>Elements are misaligned (pick left, center, or right and be consistent)</fail_condition>
+<fail_condition>Uneven spacing between similar elements</fail_condition>
+<fail_condition>Canvas looks cramped (needs more whitespace)</fail_condition>
+<fail_condition>Elements are randomly placed without clear structure</fail_condition>
+</category>
 
-🔲 6. CONSISTENCY & POLISH
-   □ Similar elements styled identically (all buttons same style, all headers same size)
-   □ Consistent border widths and corner radii
-   □ Clean, crisp edges - no rough or pixelated elements
-   □ Professional, polished appearance
+<category name="VISUAL_BALANCE_AND_HIERARCHY" priority="medium">
+<description>The canvas should have visual balance and clear importance hierarchy.</description>
+<fail_condition>One side of the canvas is visually heavier than the other</fail_condition>
+<fail_condition>No clear focal point exists</fail_condition>
+<fail_condition>Important elements do not stand out</fail_condition>
+<fail_condition>Size relationships do not make logical sense</fail_condition>
+</category>
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<category name="POLISH_AND_PROFESSIONALISM" priority="medium">
+<description>The overall appearance should be clean, consistent, and professional.</description>
+<fail_condition>Similar elements are styled differently (inconsistent)</fail_condition>
+<fail_condition>Edges appear rough or unfinished</fail_condition>
+<fail_condition>Overall appearance is not clean and professional</fail_condition>
+</category>
 
-IF ANY AESTHETIC ISSUES FOUND:
-→ Use create-duo-task to create a SPECIFIC correction task for each issue
-→ Use direct-to-start-duo-task to assign to your partner
-→ Wait for completion before ending
+</review_checklist>
 
-IF CANVAS IS BEAUTIFUL, READABLE, AND MATCHES REQUEST:
-→ Call end-duo-project again to complete`,
+<required_output_format>
+<instruction>You MUST output your findings in one of these two formats:</instruction>
+
+<if_issues_found>
+<format>
+ISSUES THAT MUST BE FIXED:
+1. [CATEGORY_NAME] Description of the specific issue
+2. [CATEGORY_NAME] Description of the specific issue
+3. [CATEGORY_NAME] Description of the specific issue
+(continue for all issues found)
+</format>
+<then_action>Create ONE task for EACH issue using create-duo-task action</then_action>
+</if_issues_found>
+
+<if_no_issues_found>
+<statement>State exactly: "All checks passed. Canvas is visually clear and complete."</statement>
+<then_action>Call end-duo-project action again to complete the project</then_action>
+</if_no_issues_found>
+</required_output_format>
+
+</final_review>`,
 				],
 			})
 
