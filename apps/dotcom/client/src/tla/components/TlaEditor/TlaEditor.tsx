@@ -426,7 +426,21 @@ function TlaEditorInner({ fileSlug, deepLinks, onLeaderAgentChange }: TlaEditorP
 				overrides={[overrides, extraDragIconOverrides]}
 				getShapeVisibility={getShapeVisibility}
 				hideUi={true}
-				cameraOptions={{ isLocked: true, zoomSpeed: 0, zoomSteps: [1] }}
+				cameraOptions={{
+					isLocked: false,
+					wheelBehavior: 'pan',
+					panSpeed: 1,
+					zoomSpeed: 0,
+					zoomSteps: [1],
+					constraints: {
+						bounds: { x: 0, y: -10000, w: 1920, h: 20000 },
+						padding: { x: 0, y: 0 },
+						origin: { x: 0.5, y: 0 },
+						initialZoom: 'default',
+						baseZoom: 'default',
+						behavior: { x: 'fixed', y: 'free' },
+					},
+				}}
 			>
 				<ThemeUpdater />
 				<ViewportLogger />

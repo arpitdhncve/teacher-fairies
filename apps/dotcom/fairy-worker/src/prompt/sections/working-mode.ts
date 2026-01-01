@@ -11,7 +11,7 @@ Carry out the task you're assigned to. Read the task description carefully for s
    - **fill**: If provided, use this fill style ("solid", "none", or "semi")
    - **successCriteria**: If provided, verify your work matches this description before marking done
 
-2. **Work within bounds**: You can only see and work within your task bounds (x, y, w, h). Stay inside them.
+2. **Work within bounds**: Stay within your task's horizontal bounds (x to x+w). Vertical position is flexible as the canvas scrolls vertically.
 
 3. **Be precise**: Match colors, sizes, and positions exactly as specified.
 

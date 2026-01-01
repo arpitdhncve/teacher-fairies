@@ -138,8 +138,50 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 
 				leaderAgent.schedule({
 					agentMessages: [
-						completionMessage +
-							' Batch complete. Review what remains: if more work is needed, create the next batch of tasks (max 3). If all work is complete, call end-duo-project.',
+						`${completionMessage}
+
+<batch_review mode="STRICT">
+<instruction>
+Before continuing, perform a STRICT review of the just-completed batch.
+Examine the canvas and identify any issues that need correction.
+</instruction>
+
+<review_checklist>
+
+<category name="OVERLAP_AND_COLLISION" priority="critical">
+<description>No elements should overlap or collide.</description>
+<fail_condition>ANY shapes overlap unintentionally</fail_condition>
+<fail_condition>ANY text overlaps other text or shapes</fail_condition>
+<fail_condition>Elements are touching or too close (minimum 10px gap)</fail_condition>
+</category>
+
+<category name="TEXT_READABILITY" priority="critical">
+<description>All text must be immediately readable.</description>
+<fail_condition>Text is too small (less than 16px)</fail_condition>
+<fail_condition>Low contrast between text and background</fail_condition>
+</category>
+
+<category name="ALIGNMENT_AND_SPACING" priority="high">
+<description>Elements should be aligned and spaced consistently.</description>
+<fail_condition>Elements are misaligned</fail_condition>
+<fail_condition>Uneven spacing between similar elements</fail_condition>
+</category>
+
+<category name="TASK_COMPLETION" priority="high">
+<description>Tasks were completed as specified.</description>
+<fail_condition>Task was not completed correctly</fail_condition>
+<fail_condition>Wrong color, size, or position used</fail_condition>
+</category>
+
+</review_checklist>
+
+<required_action>
+After reviewing:
+- If issues found: Create corrective tasks (max 3) to fix them.
+- If no issues AND more work needed for the original request: Create the next batch of tasks (max 3).
+- If no issues AND all work is complete: Call end-duo-project.
+</required_action>
+</batch_review>`,
 					],
 				})
 			}

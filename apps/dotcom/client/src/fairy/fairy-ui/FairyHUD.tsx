@@ -49,6 +49,21 @@ export function FairyHUD() {
 		handleDoubleClickFairy,
 	} = useFairySelection(agents)
 
+	// Memoize which popover state setter to use based on selection count
+	// This prevents creating new callback references on every render during streaming
+	const isMultiFairySelection = selectedFairies.length > 1
+
+	const handleMenuPopoverOpenChange = useCallback(
+		(open: boolean) => {
+			if (isMultiFairySelection) {
+				setHeaderMenuPopoverOpen(open)
+			} else {
+				setFairyMenuPopoverOpen(open)
+			}
+		},
+		[isMultiFairySelection]
+	)
+
 	const { mobileMenuOffset } = useMobilePositioning(isMobile)
 
 	const handleContextMenu = (e: MouseEvent<HTMLDivElement>) => {
@@ -147,9 +162,7 @@ export function FairyHUD() {
 								menuPopoverOpen={
 									selectedFairies.length > 1 ? headerMenuPopoverOpen : fairyMenuPopoverOpen
 								}
-								onMenuPopoverOpenChange={
-									selectedFairies.length > 1 ? setHeaderMenuPopoverOpen : setFairyMenuPopoverOpen
-								}
+								onMenuPopoverOpenChange={handleMenuPopoverOpenChange}
 								shownFairy={shownFairy}
 								selectedFairies={selectedFairies}
 								allAgents={agents}

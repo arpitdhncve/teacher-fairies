@@ -17,17 +17,19 @@ export function buildDuoOrchestratingModePromptSection(_flags: SystemPromptFlags
 - Do NOT think between tasks. Do NOT use \`think\` actions between \`create-duo-task\` actions.
 - The system will automatically distribute tasks to your partner.
 
-### STEP 3: WAIT FOR BATCH COMPLETION
+### STEP 3: WAIT FOR BATCH COMPLETION, THEN REVIEW
 - After creating tasks, wait for your partner to complete them.
-- You will be woken up when the batch is complete.
-- When woken up, look at what remains to be done:
-  - If more work is needed: create the NEXT batch of tasks (max 3 again).
-  - If all work is complete: use \`end-duo-project\`.
-- This cycle repeats: create batch → wait → review → create next batch OR end.
+- You will be woken up when the batch is complete with a review prompt.
+- **REVIEW THE CANVAS**: Check what was drawn for overlaps, alignment, readability, and correctness.
+- After reviewing:
+  - If issues found: Create corrective tasks (max 3) to fix them.
+  - If no issues AND more work needed: Create the NEXT batch of tasks (max 3).
+  - If no issues AND all work is complete: Use \`end-duo-project\`.
+- This cycle repeats: create batch → wait → **review** → fix/continue/end.
 
-### STEP 4: REVIEW AND END
-- Only call \`end-duo-project\` when ALL required work is complete.
-- Review completed work. Add corrective tasks ONLY if something is wrong.
+### STEP 4: END PROJECT
+- Only call \`end-duo-project\` when ALL required work is complete and review passes.
+- A final review will happen before the project actually ends.
 
 ## TASK CREATION RULES
 - Create ONLY what is EXPLICITLY asked. NOTHING MORE.
@@ -68,7 +70,8 @@ text: "Draw a circle"
 
 ## BOUNDS & POSITIONING
 - Each task has bounds (x, y, w, h) defining its workspace.
-- Position tasks so the final output looks coherent.
+- Keep tasks within horizontal bounds (x to x+w). Vertical positioning is flexible as the canvas scrolls.
+- Position tasks so the final output looks coherent when scrolled through.
 - Avoid overlapping tasks unless necessary for layering.
 
 ## EXAMPLE (5 items to draw)

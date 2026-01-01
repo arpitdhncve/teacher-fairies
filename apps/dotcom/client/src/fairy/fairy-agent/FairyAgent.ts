@@ -1159,6 +1159,10 @@ export class FairyAgent {
 		follower.position.moveTo(position)
 		follower.updateEntity((f) => ({ ...f, flipX: true, currentPageId: leaderPageId }))
 
+		// Start camera following for the drone fairy
+		// This makes the canvas auto-scroll to follow the fairy's drawing
+		this.fairyApp.following.startFollowing(follower.id)
+
 		// Build the duo orchestration prompt
 		const partnerName = follower.getConfig()?.name ?? 'your partner'
 		const partnerId = follower.id
