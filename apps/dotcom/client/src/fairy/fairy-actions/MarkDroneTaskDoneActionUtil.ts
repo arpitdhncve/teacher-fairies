@@ -1,4 +1,9 @@
-import { MarkDroneTaskDoneAction, Streaming, createAgentActionInfo } from '@tldraw/fairy-shared'
+import {
+	MarkDroneTaskDoneAction,
+	Streaming,
+	createAgentActionInfo,
+	toTaskId,
+} from '@tldraw/fairy-shared'
 import { uniqueId } from 'tldraw'
 import { AgentHelpers } from '../fairy-agent/AgentHelpers'
 import { AgentActionUtil } from './AgentActionUtil'
@@ -14,9 +19,20 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 		const doneTasks = currentWork.tasks.filter((task) => task.status === 'done')
 		const tasks = inProgressTasks.length > 0 ? inProgressTasks : doneTasks
 
+		const isReviewTask = tasks.some((t) => t.title.startsWith('Self-Review'))
 		const taskCount = tasks.length
 		const isPlural = taskCount !== 1
 		const taskTitle = tasks[0]?.title
+
+		if (isReviewTask) {
+			return createAgentActionInfo({
+				icon: 'search',
+				description: action.complete ? 'Review complete' : 'Reviewing work...',
+				ircMessage: action.complete ? 'I finished reviewing my work.' : null,
+				pose: 'reviewing',
+				canGroup: () => false,
+			})
+		}
 
 		return createAgentActionInfo({
 			icon: 'note',
@@ -78,13 +94,43 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 			}
 		)
 
-		// Check for remaining TODO tasks and pick next batch
-		const BATCH_SIZE = 3
 		const project = this.agent.getProject()
 		if (!project) {
 			this.agent.interrupt({ mode: 'standing-by', input: null })
 			return
 		}
+
+		// Check if we just finished the review task
+		const isReviewTask = inProgressTasks.some((t) => t.title === 'Self-Review: Check your work')
+
+		if (!isReviewTask) {
+			// We just finished normal work. Create a self-review task!
+			const reviewTaskId = toTaskId(uniqueId())
+			const reviewTaskBounds = inProgressTasks[0] // Use bounds of first completed task
+				? {
+						x: inProgressTasks[0].x,
+						y: inProgressTasks[0].y,
+						w: inProgressTasks[0].w,
+						h: inProgressTasks[0].h,
+					}
+				: { x: 0, y: 0, w: 100, h: 100 }
+
+			this.agent.fairyApp.tasks.createTask({
+				id: reviewTaskId,
+				title: 'Self-Review: Check your work',
+				text: 'Perform a strict review of the work you just completed. Check for: 1. Overlaps (no shapes should overlap unintentionally), 2. Readability (text must be legible/contrast), 3. Alignment (consistent spacing/alignment), 4. Completeness (did you fulfill requirements?). If you find issues, fix them immediately.',
+				projectId: project.id,
+				assignedTo: this.agent.id,
+				status: 'todo',
+				...reviewTaskBounds,
+			})
+
+			// Note: The existing logic below ("Check for remaining TODO tasks") will automatically
+			// pick up this new task because we just created it with status 'todo' and assigned it to self.
+		}
+
+		// Check for remaining TODO tasks and pick next batch
+		const BATCH_SIZE = 3
 
 		// Check for remaining TODO tasks assigned to this follower
 		const allMyTasks = this.agent.fairyApp.tasks
@@ -140,48 +186,15 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 					agentMessages: [
 						`${completionMessage}
 
-<batch_review mode="STRICT">
-<instruction>
-Before continuing, perform a STRICT review of the just-completed batch.
-Examine the canvas and identify any issues that need correction.
-</instruction>
-
-<review_checklist>
-
-<category name="OVERLAP_AND_COLLISION" priority="critical">
-<description>No elements should overlap or collide.</description>
-<fail_condition>ANY shapes overlap unintentionally</fail_condition>
-<fail_condition>ANY text overlaps other text or shapes</fail_condition>
-<fail_condition>Elements are touching or too close (minimum 10px gap)</fail_condition>
-</category>
-
-<category name="TEXT_READABILITY" priority="critical">
-<description>All text must be immediately readable.</description>
-<fail_condition>Text is too small (less than 16px)</fail_condition>
-<fail_condition>Low contrast between text and background</fail_condition>
-</category>
-
-<category name="ALIGNMENT_AND_SPACING" priority="high">
-<description>Elements should be aligned and spaced consistently.</description>
-<fail_condition>Elements are misaligned</fail_condition>
-<fail_condition>Uneven spacing between similar elements</fail_condition>
-</category>
-
-<category name="TASK_COMPLETION" priority="high">
-<description>Tasks were completed as specified.</description>
-<fail_condition>Task was not completed correctly</fail_condition>
-<fail_condition>Wrong color, size, or position used</fail_condition>
-</category>
-
-</review_checklist>
+<batch_complete>
+The follower has completed their assigned tasks AND performed a self-review.
+You do NOT need to review their work again.
+</batch_complete>
 
 <required_action>
-After reviewing:
-- If issues found: Create corrective tasks (max 3) to fix them.
-- If no issues AND more work needed for the original request: Create the next batch of tasks (max 3).
+- If more work needed for the original request: Create the next batch of tasks (max 3).
 - If no issues AND all work is complete: Call end-duo-project.
-</required_action>
-</batch_review>`,
+</required_action>`,
 					],
 				})
 			}

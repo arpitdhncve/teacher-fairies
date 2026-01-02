@@ -692,7 +692,7 @@ function DataHandler({
 		return () => {
 			clearInterval(intervalId)
 		}
-	}, [room, agent, pendingDrawRequestsRef])
+	}, [room, agent])
 
 	return null
 }
