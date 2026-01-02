@@ -182,6 +182,16 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 						? `Task "${inProgressTasks[0].title}" has been completed by your partner.`
 						: `${inProgressTasks.length} tasks have been completed by your partner.`
 
+				// Move leader to the work area (near the completed tasks)
+				// This reduces travel distance for the follower when picking up the next batch
+				if (inProgressTasks[0]) {
+					const workArea = {
+						x: inProgressTasks[0].x + 200, // offset to the side so leader isn't on top of work
+						y: inProgressTasks[0].y,
+					}
+					leaderAgent.position.moveTo(workArea)
+				}
+
 				leaderAgent.schedule({
 					agentMessages: [
 						`${completionMessage}
