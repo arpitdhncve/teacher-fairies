@@ -576,6 +576,10 @@ export const CreateDuoTaskActionSchema = z
 		y: z.number(),
 		w: z.number(),
 		h: z.number(),
+		// Optional structured style hints for better task accuracy
+		color: z.string().optional(),
+		fill: z.enum(['solid', 'none', 'semi']).optional(),
+		successCriteria: z.string().optional(),
 	})
 	.meta({
 		title: 'Create Duo Task',

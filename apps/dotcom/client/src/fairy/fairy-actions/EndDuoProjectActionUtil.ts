@@ -30,73 +30,7 @@ export class EndDuoProjectActionUtil extends AgentActionUtil<EndDuoProjectAction
 			return
 		}
 
-		// Two-phase end mechanism: first end-duo-project schedules a review, second one actually ends
-		if (!project.hasPendingFinalReview) {
-			// First time receiving end-duo-project: schedule a final review
-			this.agent.fairyApp.projects.updateProject(project.id, {
-				hasPendingFinalReview: true,
-			})
-
-			// Schedule review for the leader to examine the completed work
-			const viewportBounds = this.agent.editor.getViewportPageBounds()
-
-			// Add original prompt reminder
-			const originalPromptReminder = project.originalPrompt
-				? `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📋 ORIGINAL USER REQUEST:\n"${project.originalPrompt}"\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nYou MUST verify the drawing matches this request EXACTLY.\n`
-				: ''
-
-			this.agent.schedule({
-				bounds: {
-					x: viewportBounds.x,
-					y: viewportBounds.y,
-					w: viewportBounds.w,
-					h: viewportBounds.h,
-				},
-				agentMessages: [
-					`Before ending the project, perform a STRICT final review of the completed work.
-${originalPromptReminder}
-REVIEW CHECKLIST - BE VERY STRICT:
-
-✓ 1. EXACT MATCH
-   - Does the drawing contain EXACTLY what was asked for?
-   - Nothing extra that wasn't requested?
-   - Nothing missing from the request?
-
-✓ 2. READABILITY
-   - Is ALL text clearly readable?
-   - Are font sizes appropriate?
-   - Is text contrast sufficient?
-
-✓ 3. ALIGNMENT
-   - Are elements properly aligned?
-   - Is spacing consistent?
-   - Are things positioned correctly?
-
-✓ 4. LAYOUT QUALITY
-   - No overlapping elements?
-   - Proper spacing between items?
-   - Professional appearance?
-
-✓ 5. ACCURACY
-   - Are numbers/labels/text correct?
-   - Are colors/styles as requested?
-
-IF YOU FIND ANY ISSUES:
-- Use create-duo-task to create a correction task for EACH new issue you see
-- Use direct-to-start-duo-task to assign them to your partner
-- Wait for completion before ending
-
-IF EVERYTHING MATCHES THE ORIGINAL REQUEST EXACTLY:
-- Call end-duo-project again to complete`,
-				],
-			})
-
-			// Return early - don't end the project yet, let the review happen first
-			return
-		}
-
-		// If we reach here, hasPendingFinalReview is true - the review has been done
-		// Proceed with actual project ending
+		// Directly proceed to ending the project (review phase removed)
 
 		const membersIds = project.members.map((member) => member.id)
 		const memberAgents = this.agent.fairyApp.agents

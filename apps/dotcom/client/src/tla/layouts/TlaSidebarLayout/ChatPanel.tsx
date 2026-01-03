@@ -544,6 +544,69 @@ function DataHandler({
 				return
 			}
 
+			// --- RESET: Clear the canvas ---
+			if (topic === 'reset.request') {
+				const payloadText = new TextDecoder().decode(payload)
+				let decoded: any
+
+				try {
+					decoded = JSON.parse(payloadText)
+				} catch (parseErr) {
+					console.error('Failed to parse reset.request payload:', parseErr)
+					return
+				}
+
+				const requestId = decoded?.request_id
+				console.log('[RESET] Received reset.request, request_id:', requestId)
+
+				if (!requestId) {
+					console.warn('reset.request: no valid request_id found')
+					return
+				}
+
+				try {
+					// Get the editor from the agent
+					const editor = agent.editor
+
+					// Clear the canvas by deleting all shapes on the current page
+					const shapeIds = editor.getCurrentPageShapeIds()
+					if (shapeIds.size > 0) {
+						editor.deleteShapes([...shapeIds])
+						console.log('[RESET] Cleared', shapeIds.size, 'shapes from canvas')
+					} else {
+						console.log('[RESET] Canvas was already empty')
+					}
+
+					// Send success response back to backend
+					room.localParticipant.publishData(
+						new TextEncoder().encode(
+							JSON.stringify({
+								request_id: requestId,
+								ok: true,
+							})
+						),
+						{ topic: 'reset.response' }
+					)
+					console.log('[RESET] Sent reset.response OK')
+				} catch (e: any) {
+					console.error('[RESET] Error clearing canvas:', e)
+					// Send error response
+					room.localParticipant.publishData(
+						new TextEncoder().encode(
+							JSON.stringify({
+								request_id: requestId,
+								ok: false,
+								error: e?.message ?? String(e),
+							})
+						),
+						{ topic: 'reset.response' }
+					)
+					console.log('[RESET] Sent reset.response ERROR:', e?.message)
+				}
+
+				return
+			}
+
 			// --- UI Messages (same) ---
 			if (topic === 'ui.speak' || topic === 'ui.question') {
 				const payloadText = new TextDecoder().decode(payload)
@@ -629,7 +692,7 @@ function DataHandler({
 		return () => {
 			clearInterval(intervalId)
 		}
-	}, [room, agent, pendingDrawRequestsRef])
+	}, [room, agent])
 
 	return null
 }

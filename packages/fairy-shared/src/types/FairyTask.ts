@@ -11,6 +11,10 @@ export interface BaseTaskDefinition {
 	y: number
 	w: number
 	h: number
+	// Optional structured style hints for better task accuracy
+	color?: string
+	fill?: 'solid' | 'none' | 'semi'
+	successCriteria?: string
 }
 
 /**

@@ -280,6 +280,10 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 								y: plannedTask.y,
 								w: plannedTask.w,
 								h: plannedTask.h,
+								// Pass through optional style hints
+								color: plannedTask.color,
+								fill: plannedTask.fill,
+								successCriteria: plannedTask.successCriteria,
 							})
 							createdTaskIds.push(taskId)
 						})
@@ -306,7 +310,13 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 
 						// Build task list description for follower (only NEW tasks)
 						const taskDescriptions = undistributedTasks
-							.map((task) => `- ${task.title}${task.text ? `: ${task.text}` : ''}`)
+							.map((task) => {
+								let desc = `- ${task.title}${task.text ? `: ${task.text}` : ''}`
+								if (task.color) desc += ` [color: ${task.color}]`
+								if (task.fill) desc += ` [fill: ${task.fill}]`
+								if (task.successCriteria) desc += ` [success: ${task.successCriteria}]`
+								return desc
+							})
 							.join('\n')
 
 						const leaderFirstName = agent.getConfig().name?.split(' ')[0] ?? ''

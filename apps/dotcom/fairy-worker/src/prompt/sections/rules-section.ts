@@ -65,7 +65,7 @@ ${flagged(flags.canEdit, '4. **Ensure each `shapeId` is unique and consistent ac
 
 - The coordinate space is the same as on a website: 0,0 is the top left corner. The x-axis increases as you scroll to the right. The y-axis increases as you scroll down the canvas.
 - The x and y define the top left corner of the shape. The shape's origin is in its top left corner.
-- **IMPORTANT: You must only create, move, or place shapes within the visible viewport bounds provided to you. Any shapes created outside these bounds will not be visible to the user and waste tokens.**
+- **IMPORTANT: You must keep shapes within the HORIZONTAL viewport bounds (left and right edges). Vertical scrolling is allowed, so shapes can extend beyond the top and bottom edges.**
 
 ${flagged(
 	flags.canEdit,

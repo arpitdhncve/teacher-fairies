@@ -1,4 +1,9 @@
-import { MarkDroneTaskDoneAction, Streaming, createAgentActionInfo } from '@tldraw/fairy-shared'
+import {
+	MarkDroneTaskDoneAction,
+	Streaming,
+	createAgentActionInfo,
+	toTaskId,
+} from '@tldraw/fairy-shared'
 import { uniqueId } from 'tldraw'
 import { AgentHelpers } from '../fairy-agent/AgentHelpers'
 import { AgentActionUtil } from './AgentActionUtil'
@@ -14,9 +19,20 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 		const doneTasks = currentWork.tasks.filter((task) => task.status === 'done')
 		const tasks = inProgressTasks.length > 0 ? inProgressTasks : doneTasks
 
+		const isReviewTask = tasks.some((t) => t.title.startsWith('Self-Review'))
 		const taskCount = tasks.length
 		const isPlural = taskCount !== 1
 		const taskTitle = tasks[0]?.title
+
+		if (isReviewTask) {
+			return createAgentActionInfo({
+				icon: 'search',
+				description: action.complete ? 'Review complete' : 'Reviewing work...',
+				ircMessage: action.complete ? 'I finished reviewing my work.' : null,
+				pose: 'reviewing',
+				canGroup: () => false,
+			})
+		}
 
 		return createAgentActionInfo({
 			icon: 'note',
@@ -78,13 +94,43 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 			}
 		)
 
-		// Check for remaining TODO tasks and pick next batch
-		const BATCH_SIZE = 3
 		const project = this.agent.getProject()
 		if (!project) {
 			this.agent.interrupt({ mode: 'standing-by', input: null })
 			return
 		}
+
+		// Check if we just finished the review task
+		const isReviewTask = inProgressTasks.some((t) => t.title === 'Self-Review: Check your work')
+
+		if (!isReviewTask) {
+			// We just finished normal work. Create a self-review task!
+			const reviewTaskId = toTaskId(uniqueId())
+			const reviewTaskBounds = inProgressTasks[0] // Use bounds of first completed task
+				? {
+						x: inProgressTasks[0].x,
+						y: inProgressTasks[0].y,
+						w: inProgressTasks[0].w,
+						h: inProgressTasks[0].h,
+					}
+				: { x: 0, y: 0, w: 100, h: 100 }
+
+			this.agent.fairyApp.tasks.createTask({
+				id: reviewTaskId,
+				title: 'Self-Review: Check your work',
+				text: 'Perform a strict review of the work you just completed. Check for: 1. Overlaps (no shapes should overlap unintentionally), 2. Readability (text must be legible/contrast), 3. Alignment (consistent spacing/alignment), 4. Completeness (did you fulfill requirements?). If you find issues, fix them immediately.',
+				projectId: project.id,
+				assignedTo: this.agent.id,
+				status: 'todo',
+				...reviewTaskBounds,
+			})
+
+			// Note: The existing logic below ("Check for remaining TODO tasks") will automatically
+			// pick up this new task because we just created it with status 'todo' and assigned it to self.
+		}
+
+		// Check for remaining TODO tasks and pick next batch
+		const BATCH_SIZE = 3
 
 		// Check for remaining TODO tasks assigned to this follower
 		const allMyTasks = this.agent.fairyApp.tasks
@@ -136,10 +182,29 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 						? `Task "${inProgressTasks[0].title}" has been completed by your partner.`
 						: `${inProgressTasks.length} tasks have been completed by your partner.`
 
+				// Move leader to the work area (near the completed tasks)
+				// This reduces travel distance for the follower when picking up the next batch
+				if (inProgressTasks[0]) {
+					const workArea = {
+						x: inProgressTasks[0].x + 200, // offset to the side so leader isn't on top of work
+						y: inProgressTasks[0].y,
+					}
+					leaderAgent.position.moveTo(workArea)
+				}
+
 				leaderAgent.schedule({
 					agentMessages: [
-						completionMessage +
-							' Batch complete. Review what remains: if more work is needed, create the next batch of tasks (max 3). If all work is complete, call end-duo-project.',
+						`${completionMessage}
+
+<batch_complete>
+The follower has completed their assigned tasks AND performed a self-review.
+You do NOT need to review their work again.
+</batch_complete>
+
+<required_action>
+- If more work needed for the original request: Create the next batch of tasks (max 3).
+- If no issues AND all work is complete: Call end-duo-project.
+</required_action>`,
 					],
 				})
 			}

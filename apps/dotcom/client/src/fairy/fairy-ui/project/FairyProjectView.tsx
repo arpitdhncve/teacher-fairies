@@ -205,6 +205,12 @@ Make sure to give the approximate locations of the work to be done, if relevant,
 				agent.updateEntity((f) => ({ ...f, flipX: true, currentPageId: leaderPageId }))
 			})
 
+			// Start camera following for the drone fairy in duo mode
+			// This makes the canvas auto-scroll to follow the fairy's drawing
+			if (isDuo && followerAgents[0]) {
+				fairyApp.following.startFollowing(followerAgents[0].id)
+			}
+
 			// Send the prompt to the leader
 			const groupChatPrompt = getGroupChatPrompt(value, followerAgents, isDuo)
 			leaderAgent.prompt({
