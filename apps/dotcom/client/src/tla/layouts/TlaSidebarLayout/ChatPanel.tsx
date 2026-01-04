@@ -1,3 +1,4 @@
+import { useAuth } from '@clerk/clerk-react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 // ✅ swap TldrawAgent -> FairyAgent
 import { FairyAgent } from '../../../fairy/fairy-agent/FairyAgent'
@@ -698,6 +699,7 @@ function DataHandler({
 }
 
 export function ChatPanel({ agent }: { agent?: FairyAgent }) {
+	const auth = useAuth()
 	const [lkConnect, setLkConnect] = useState(false)
 	const [lkToken, setLkToken] = useState<string | undefined>()
 	const [lkUrl, setLkUrl] = useState<string | undefined>()
@@ -821,6 +823,32 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 					style={{ padding: '8px 10px', borderRadius: 10 }}
 				>
 					{lkConnect ? 'Stop Learning' : lkLoading ? 'Starting…' : 'Start Learning'}
+				</button>
+
+				<button
+					onClick={async () => {
+						if (auth.isSignedIn) {
+							await auth.signOut()
+						}
+						import('../../../utils/scratch-persistence-key').then(
+							({ resetScratchPersistenceKey }) => {
+								resetScratchPersistenceKey()
+								import('../../utils/local-session-state').then(({ clearLocalSessionState }) => {
+									clearLocalSessionState()
+									window.location.href = '/'
+								})
+							}
+						)
+					}}
+					style={{
+						padding: '8px 10px',
+						borderRadius: 10,
+						background: 'rgba(239, 68, 68, 0.2)',
+						color: '#fff',
+					}}
+					title="Reset Workspace"
+				>
+					Logout
 				</button>
 
 				{error ? <span style={{ color: 'salmon', fontSize: 12 }}>{error}</span> : null}

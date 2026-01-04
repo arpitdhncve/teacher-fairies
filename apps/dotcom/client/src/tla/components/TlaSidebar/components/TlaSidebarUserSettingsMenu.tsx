@@ -40,7 +40,7 @@ export function TlaUserSettingsMenu() {
 	const userMenuLbl = useMsg(messages.userMenu)
 	const user = useValue('auth', () => app.getUser(), [app])
 
-	if (!user) return null
+	// if (!user) return null
 
 	return (
 		<TldrawUiDropdownMenuRoot id={`user-settings-sidebar`}>
