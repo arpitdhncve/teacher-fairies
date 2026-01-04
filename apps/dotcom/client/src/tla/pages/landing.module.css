@@ -106,6 +106,29 @@
   margin-right: auto;
 }
 
+/* Typewriter animation */
+.animatedText {
+  display: inline;
+}
+
+.cursor {
+  display: inline-block;
+  color: #667eea;
+  font-weight: 300;
+  opacity: 0;
+  margin-left: 2px;
+  animation: none;
+}
+
+.cursorVisible {
+  opacity: 1;
+}
+
+.word {
+  display: inline-block;
+  margin-right: 0.3em;
+}
+
 .heroCta {
   display: flex;
   gap: 1rem;
