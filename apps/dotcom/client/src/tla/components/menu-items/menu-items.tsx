@@ -20,7 +20,6 @@ import { useMaybeApp } from '../../hooks/useAppState'
 import { useTldrawAppUiEvents } from '../../utils/app-ui-events'
 import { getCurrentEditor } from '../../utils/getCurrentEditor'
 import { defineMessages, useMsg } from '../../utils/i18n'
-import { clearLocalSessionState } from '../../utils/local-session-state'
 import { SubmitFeedbackDialog } from '../dialogs/SubmitFeedbackDialog'
 import { TlaManageCookiesDialog } from '../dialogs/TlaManageCookiesDialog'
 
@@ -49,18 +48,30 @@ const messages = defineMessages({
 
 export function SignOutMenuItem() {
 	const auth = useAuth()
-
 	const trackEvent = useTldrawAppUiEvents()
 
 	const label = useMsg(messages.signOut)
 
-	const handleSignout = useCallback(() => {
+	const handleSignout = useCallback(async () => {
 		signoutAnalytics()
-		auth.signOut().then(clearLocalSessionState)
 		trackEvent('sign-out-clicked', { source: 'sidebar' })
+
+		// Sign out of Clerk if signed in
+		if (auth.isSignedIn) {
+			await auth.signOut()
+		}
+
+		// Reset the local scratch persistence key to "log out" locally
+		import('../../../utils/scratch-persistence-key').then(({ resetScratchPersistenceKey }) => {
+			resetScratchPersistenceKey()
+			// Also clear the local session state (sidebars, flags, etc)
+			import('../../utils/local-session-state').then(({ clearLocalSessionState }) => {
+				clearLocalSessionState()
+				window.location.href = '/'
+			})
+		})
 	}, [auth, trackEvent])
 
-	if (!auth.isSignedIn) return
 	return (
 		<TldrawUiMenuGroup id="account-actions">
 			<TldrawUiMenuItem

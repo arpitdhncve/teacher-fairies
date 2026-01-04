@@ -38,6 +38,7 @@ import {
 	CookieConsentMenuItem,
 	GiveUsFeedbackMenuItem,
 	LegalSummaryMenuItem,
+	SignOutMenuItem,
 	UserManualMenuItem,
 } from '../menu-items/menu-items'
 import { useRoomInfo } from './TlaEditorTopRightPanel'
@@ -146,6 +147,7 @@ export function TlaEditorTopLeftPanelAnonymous() {
 						{!app && (
 							<TldrawUiMenuGroup id="signin">
 								<SignInMenuItem />
+								<SignOutMenuItem />
 							</TldrawUiMenuGroup>
 						)}
 					</TldrawUiDropdownMenuContent>
