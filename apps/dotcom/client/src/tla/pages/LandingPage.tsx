@@ -1,6 +1,6 @@
 import * as Clerk from '@clerk/elements/common'
 import * as SignIn from '@clerk/elements/sign-in'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { assert, getFromSessionStorage } from 'tldraw'
 import { routes } from '../../routeDefs'
@@ -106,14 +106,67 @@ function GoogleSignInButton({ className }: { className?: string }) {
 	)
 }
 
+// Words to display in sequence (outside component to prevent re-creation)
+const HERO_WORDS = [
+	'Imagine,',
+	'you',
+	'are',
+	'learning',
+	'from',
+	'a',
+	'teacher',
+	'in',
+	'a',
+	'classroom.',
+]
+
+function AnimatedHeroTitle() {
+	const [displayedWords, setDisplayedWords] = useState<string[]>([])
+	const [showCursor, setShowCursor] = useState(true)
+
+	useEffect(() => {
+		let wordIndex = 0
+		const addNextWord = () => {
+			if (wordIndex < HERO_WORDS.length) {
+				setDisplayedWords((prev) => [...prev, HERO_WORDS[wordIndex]])
+				wordIndex++
+				setTimeout(addNextWord, 400)
+			}
+		}
+		// Start the animation
+		setTimeout(addNextWord, 300)
+	}, [])
+
+	// Blinking cursor effect
+	useEffect(() => {
+		const interval = setInterval(() => {
+			setShowCursor((prev) => !prev)
+		}, 530)
+		return () => clearInterval(interval)
+	}, [])
+
+	return (
+		<h1 className={styles.heroTitle}>
+			<span className={styles.animatedText}>
+				{displayedWords.map((word, index) => (
+					<span key={index} className={styles.word}>
+						{word}{' '}
+					</span>
+				))}
+			</span>
+			<span className={`${styles.cursor} ${showCursor ? styles.cursorVisible : ''}`}>|</span>
+		</h1>
+	)
+}
+
 function LandingPage() {
 	return (
 		<div className={styles.landingContainer}>
 			{/* Header */}
 			<header className={styles.header}>
 				<a href="/" className={styles.logo}>
-					<span className={styles.logoIcon}>🎓</span>
-					<span>AI Tutor</span>
+					<span className={styles.logoIcon}>✏️</span>
+					<span>DrawIt</span>
 				</a>
 				<GoogleSignInButton className={styles.signInBtn} />
 			</header>
@@ -126,11 +179,7 @@ function LandingPage() {
 					<div className={`${styles.orb} ${styles.orb3}`} />
 				</div>
 				<div className={styles.heroContent}>
-					<h1 className={styles.heroTitle}>Learn Like You're in a Classroom</h1>
-					<p className={styles.heroSubtitle}>
-						Experience personalized AI-powered tutoring with an interactive canvas. Your virtual
-						teacher explains concepts step-by-step, just like a real classroom experience.
-					</p>
+					<AnimatedHeroTitle />
 					<div className={styles.heroCta}>
 						<GoogleSignInButton className={styles.primaryBtn} />
 						<button className={styles.secondaryBtn}>Watch Demo</button>
@@ -140,7 +189,7 @@ function LandingPage() {
 
 			{/* Features Section */}
 			<section className={styles.features}>
-				<h2 className={styles.featuresTitle}>Why AI Tutor?</h2>
+				<h2 className={styles.featuresTitle}>Why DrawIt?</h2>
 				<p className={styles.featuresSubtitle}>
 					A revolutionary way to learn with AI that truly understands how to teach.
 				</p>
@@ -182,7 +231,7 @@ function LandingPage() {
 				<div className={styles.ctaCard}>
 					<h2 className={styles.ctaTitle}>Ready to Transform Your Learning?</h2>
 					<p className={styles.ctaText}>
-						Join thousands of students who are learning smarter with AI Tutor.
+						Join thousands of students who are learning smarter with DrawIt.
 					</p>
 					<GoogleSignInButton className={styles.primaryBtn} />
 				</div>
@@ -190,7 +239,7 @@ function LandingPage() {
 
 			{/* Footer */}
 			<footer className={styles.footer}>
-				<p>© {new Date().getFullYear()} AI Tutor. Learn smarter, not harder.</p>
+				<p>© {new Date().getFullYear()} DrawIt. Learn smarter, not harder.</p>
 			</footer>
 		</div>
 	)

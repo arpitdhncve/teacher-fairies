@@ -199,11 +199,11 @@ function TlaEnterEmailStep({
 						<F {...messages.inviteMessage} /> {inviteInfo.groupName}
 						<br />
 						<br />
-						<F defaultMessage="tldraw is a free online whiteboard. Create an account to save your files and work with your friends." />
+						<F defaultMessage="DrawIt is your AI-powered classroom tutor. Create an account to save your learning progress and access personalized lessons." />
 					</>
 				) : (
 					<>
-						<F defaultMessage="tldraw is a free online whiteboard. Create an account to save your files and work with your friends." />
+						<F defaultMessage="DrawIt is your AI-powered classroom tutor. Create an account to save your learning progress and access personalized lessons." />
 					</>
 				)}
 			</div>
