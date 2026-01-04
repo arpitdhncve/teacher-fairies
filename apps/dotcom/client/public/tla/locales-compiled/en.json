@@ -447,6 +447,12 @@
       "value": "Page menu"
     }
   ],
+  "52448bd3f9": [
+    {
+      "type": 0,
+      "value": "DrawIt is your AI-powered classroom tutor. Create an account to save your learning progress and access personalized lessons."
+    }
+  ],
   "542248f0ba": [
     {
       "type": 0,
@@ -731,12 +737,6 @@
     {
       "type": 0,
       "value": "Please reload"
-    }
-  ],
-  "76dea3c9ca": [
-    {
-      "type": 0,
-      "value": "tldraw is a free online whiteboard. Create an account to save your files and work with your friends."
     }
   ],
   "777f9e90cf": [

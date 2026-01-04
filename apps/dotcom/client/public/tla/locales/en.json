@@ -209,6 +209,9 @@
   "517bb809d9": {
     "translation": "Page menu"
   },
+  "52448bd3f9": {
+    "translation": "DrawIt is your AI-powered classroom tutor. Create an account to save your learning progress and access personalized lessons."
+  },
   "542248f0ba": {
     "translation": "This file is now read-only"
   },
@@ -328,9 +331,6 @@
   },
   "7697920637": {
     "translation": "Please reload"
-  },
-  "76dea3c9ca": {
-    "translation": "tldraw is a free online whiteboard. Create an account to save your files and work with your friends."
   },
   "777f9e90cf": {
     "translation": "Invalid request."

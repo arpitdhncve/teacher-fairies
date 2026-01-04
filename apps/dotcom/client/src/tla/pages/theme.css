@@ -1,0 +1,59 @@
+/* DrawIt Premium Theme - Light Mode (White Background) */
+/* Shared design tokens for consistent styling */
+
+:root {
+  /* ===== COLOR PALETTE ===== */
+  
+  /* Backgrounds - Light Theme */
+  --theme-bg-primary: #ffffff;
+  --theme-bg-secondary: #fafafa;
+  --theme-bg-tertiary: #f5f5f5;
+  --theme-bg-card: rgba(0, 0, 0, 0.02);
+  --theme-bg-card-hover: rgba(0, 0, 0, 0.04);
+  --theme-bg-header: rgba(255, 255, 255, 0.9);
+  
+  /* Text Colors - Dark on Light */
+  --theme-text-primary: #111111;
+  --theme-text-secondary: rgba(0, 0, 0, 0.65);
+  --theme-text-muted: rgba(0, 0, 0, 0.45);
+  --theme-text-subtle: rgba(0, 0, 0, 0.35);
+  
+  /* Borders - Subtle grays */
+  --theme-border: rgba(0, 0, 0, 0.08);
+  --theme-border-hover: rgba(0, 0, 0, 0.15);
+  --theme-border-active: rgba(0, 0, 0, 0.25);
+  
+  /* Google Sign-In Button - Dark Blue */
+  --theme-google-btn: #1a4fa0;
+  --theme-google-btn-hover: #2563c4;
+  --theme-google-btn-shadow: rgba(26, 79, 160, 0.25);
+  
+  /* Accent - Dark for contrast */
+  --theme-accent: #111111;
+  --theme-accent-glow: rgba(0, 0, 0, 0.05);
+  
+  /* ===== SHADOWS ===== */
+  --theme-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --theme-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --theme-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --theme-shadow-glow: 0 0 40px rgba(0, 0, 0, 0.04);
+  
+  /* ===== TYPOGRAPHY ===== */
+  --theme-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  /* ===== TRANSITIONS ===== */
+  --theme-transition-fast: 0.15s ease;
+  --theme-transition-normal: 0.25s ease;
+  --theme-transition-slow: 0.4s ease;
+  
+  /* ===== BORDER RADIUS ===== */
+  --theme-radius-sm: 8px;
+  --theme-radius-md: 12px;
+  --theme-radius-lg: 16px;
+  --theme-radius-xl: 24px;
+  
+  /* ===== BLUR ===== */
+  --theme-blur-sm: blur(8px);
+  --theme-blur-md: blur(12px);
+  --theme-blur-lg: blur(20px);
+}

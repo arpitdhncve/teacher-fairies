@@ -63,6 +63,9 @@ export const router = createRoutesFromElements(
 	>
 		<Route lazy={() => import('./tla/providers/TlaRootProviders')}>
 			<Route path={ROUTES.tlaRoot} lazy={() => import('./tla/pages/LandingPage')} />
+			<Route lazy={() => import('./tla/providers/RequireSignedInUser')}>
+				<Route path={ROUTES.tlaHome} lazy={() => import('./tla/pages/HomePage')} />
+			</Route>
 			<Route path={ROUTES.pricing} lazy={() => import('./pages/pricing')} />
 			<Route element={<NoIndex />}>
 				<Route path={ROUTES.tlaNew} lazy={() => import('./pages/tla-new')} />

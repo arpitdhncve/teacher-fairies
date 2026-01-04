@@ -1,22 +1,20 @@
 import * as Clerk from '@clerk/elements/common'
 import * as SignIn from '@clerk/elements/sign-in'
 import { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { assert, getFromSessionStorage } from 'tldraw'
+import { useNavigate } from 'react-router-dom'
+import { getFromSessionStorage } from 'tldraw'
 import { routes } from '../../routeDefs'
 import { useMaybeApp } from '../hooks/useAppState'
 import { clearRedirectOnSignIn, setRedirectOnSignIn } from '../utils/redirect'
 import { SESSION_STORAGE_KEYS } from '../utils/session-storage'
-import { clearShouldSlurpFile, getShouldSlurpFile } from '../utils/slurping'
 import styles from './landing.module.css'
 
 export function Component() {
 	const app = useMaybeApp()
 	const navigate = useNavigate()
-	const location = useLocation()
 
 	useEffect(() => {
-		const handleFileOperations = async () => {
+		const handleSignedInUser = async () => {
 			if (!app) return
 
 			// Check for redirect-to first (set by OAuth sign-in)
@@ -27,39 +25,12 @@ export function Component() {
 				return
 			}
 
-			if (getShouldSlurpFile()) {
-				const res = await app.slurpFile()
-				if (res.ok) {
-					clearShouldSlurpFile()
-					app.ensureFileVisibleInSidebar(res.value.fileId)
-					navigate(routes.tlaFile(res.value.fileId), {
-						replace: true,
-						state: location.state,
-					})
-				}
-				return
-			}
-
-			const recentFiles = app.getMyFiles()
-			if (recentFiles.length === 0) {
-				const result = await app.createFile()
-				assert(result.ok, 'Failed to create file')
-				if (result.ok) {
-					app.ensureFileVisibleInSidebar(result.value.fileId)
-					navigate(routes.tlaFile(result.value.fileId), {
-						replace: true,
-						state: location.state,
-					})
-				}
-				return
-			}
-
-			app.ensureFileVisibleInSidebar(recentFiles[0].fileId)
-			navigate(routes.tlaFile(recentFiles[0].fileId), { replace: true, state: location.state })
+			// Redirect signed-in users to home page
+			navigate(routes.tlaHome(), { replace: true })
 		}
 
-		handleFileOperations()
-	}, [app, navigate, location])
+		handleSignedInUser()
+	}, [app, navigate])
 
 	// If logged in, navigation will be handled by useEffect above
 	if (app) return null

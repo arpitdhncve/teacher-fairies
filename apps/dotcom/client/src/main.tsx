@@ -23,8 +23,8 @@ createRoot(document.getElementById('root')!).render(
 		publishableKey={PUBLISHABLE_KEY}
 		afterSignOutUrl={routes.tlaRoot()}
 		signInUrl="/"
-		signInFallbackRedirectUrl={routes.tlaRoot()}
-		signUpFallbackRedirectUrl={routes.tlaRoot()}
+		signInFallbackRedirectUrl={routes.tlaHome()}
+		signUpFallbackRedirectUrl={routes.tlaHome()}
 	>
 		<HelmetProvider>
 			<Head />
