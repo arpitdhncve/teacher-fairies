@@ -1,6 +1,9 @@
+import { useAuth } from '@clerk/clerk-react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 // ✅ swap TldrawAgent -> FairyAgent
 import { FairyAgent } from '../../../fairy/fairy-agent/FairyAgent'
+import { clearLocalSessionState } from '../../utils/local-session-state'
 
 import {
 	LiveKitRoom,
@@ -698,6 +701,8 @@ function DataHandler({
 }
 
 export function ChatPanel({ agent }: { agent?: FairyAgent }) {
+	const auth = useAuth()
+	const navigate = useNavigate()
 	const [lkConnect, setLkConnect] = useState(false)
 	const [lkToken, setLkToken] = useState<string | undefined>()
 	const [lkUrl, setLkUrl] = useState<string | undefined>()
@@ -710,6 +715,13 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 	const pendingDrawRequestsRef = useRef<Map<string, { request_id: string; previousMode: string }>>(
 		new Map()
 	)
+
+	const handleLogout = useCallback(() => {
+		auth.signOut().then(() => {
+			clearLocalSessionState()
+			navigate('/')
+		})
+	}, [auth, navigate])
 
 	const pushMessage = useCallback((m: ChatMsg) => {
 		setMessages((prev) => {
@@ -821,6 +833,20 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 					style={{ padding: '8px 10px', borderRadius: 10 }}
 				>
 					{lkConnect ? 'Stop Learning' : lkLoading ? 'Starting…' : 'Start Learning'}
+				</button>
+
+				<button
+					onClick={handleLogout}
+					style={{
+						padding: '8px 10px',
+						borderRadius: 10,
+						background: '#ef4444',
+						color: 'white',
+						border: 'none',
+						cursor: 'pointer',
+					}}
+				>
+					Logout
 				</button>
 
 				{error ? <span style={{ color: 'salmon', fontSize: 12 }}>{error}</span> : null}
