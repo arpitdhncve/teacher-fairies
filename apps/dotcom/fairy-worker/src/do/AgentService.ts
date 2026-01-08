@@ -348,6 +348,12 @@ export class AgentService {
 		userStub: ReturnType<Environment['TL_USER']['get']>,
 		userId: string
 	): Promise<void> {
+		// Skip usage recording for anonymous users
+		if (userId.startsWith('anonymous-')) {
+			console.log('Skipping usage recording for anonymous user:', userId)
+			return
+		}
+
 		// OpenRouter / ai-sdk providerMetadata may vary; keep this safe.
 		if (!providerMetadata) {
 			console.warn('No provider metadata found (usage recording skipped).')
@@ -388,9 +394,27 @@ export class AgentService {
 		userId: string,
 		userStub: ReturnType<Environment['TL_USER']['get']>
 	): AsyncGenerator<Streaming<AgentAction>> {
+		console.log('[AgentService.streamActions] Starting for user:', userId)
 		try {
 			const modelName = getModelName(prompt, this.env)
+			console.log('[AgentService.streamActions] Model name:', modelName)
+			console.log(
+				'[AgentService.streamActions] OpenRouter API key present:',
+				!!this.env.OPENROUTER_API_KEY
+			)
+			console.log(
+				'[AgentService.streamActions] OpenRouter API key length:',
+				this.env.OPENROUTER_API_KEY?.length || 0
+			)
+			console.log(
+				'[AgentService.streamActions] OpenRouter API key prefix:',
+				this.env.OPENROUTER_API_KEY?.substring(0, 8) + '...'
+			)
 			const model = this.getModel(modelName)
+			console.log(
+				'[AgentService.streamActions] Model resolved:',
+				(model as any).modelId || modelName
+			)
 
 			if (typeof model === 'string') {
 				throw new Error('Model is a string, not a LanguageModel')
@@ -496,6 +520,19 @@ export class AgentService {
 			await result.usage
 		} catch (error: any) {
 			if (signal?.aborted || error?.name === 'AbortError') return
+			// Log detailed error information for debugging
+			console.error('=== OPENROUTER API ERROR ===')
+			console.error('Error name:', error?.name)
+			console.error('Error message:', error?.message)
+			console.error('Error cause:', error?.cause)
+			console.error('Error data:', JSON.stringify(error?.data, null, 2))
+			console.error('Error response:', error?.response)
+			console.error('Error status:', error?.status || error?.statusCode)
+			console.error(
+				'Full error object:',
+				JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+			)
+			console.error('=== END OPENROUTER API ERROR ===')
 			throw error
 		}
 	}

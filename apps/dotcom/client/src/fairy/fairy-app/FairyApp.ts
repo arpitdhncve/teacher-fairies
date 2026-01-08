@@ -81,7 +81,7 @@ export class FairyApp {
 
 	constructor(
 		public editor: Editor,
-		public tldrawApp: TldrawApp
+		public tldrawApp: TldrawApp | null
 	) {
 		this.agents = new FairyAppAgentsManager(this)
 		this.following = new FairyAppFollowingManager(this)
@@ -148,10 +148,13 @@ export class FairyApp {
 		this.projects.disbandAllProjects()
 		this.tasks.reset()
 		// Delete all fairy configs first so new ones get created when agents are re-synced
-		const agents = this.agents.getAgents()
-		agents.forEach((agent) => {
-			this.tldrawApp.z.mutate.user.deleteFairyConfig({ id: agent.id })
-		})
+		// (only if logged in)
+		if (this.tldrawApp) {
+			const agents = this.agents.getAgents()
+			agents.forEach((agent) => {
+				this.tldrawApp!.z.mutate.user.deleteFairyConfig({ id: agent.id })
+			})
+		}
 		this.agents.resetAllAgents()
 		this.following.reset()
 		this.waits.reset()

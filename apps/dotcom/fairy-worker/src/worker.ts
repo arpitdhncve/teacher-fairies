@@ -87,9 +87,27 @@ async function requireFairyAccess(request: IRequest, env: Environment) {
 
 	try {
 		const auth = await getAuth(request, env)
+
+		// For anonymous users, create a pseudo-auth based on a session cookie or IP
 		if (!auth || 'userId' in auth === false || auth.userId === null) {
-			throw new Error('Unauthorized')
+			// Generate a session-based user ID for anonymous users
+			// Use IP address + user agent as a pseudo-identifier for rate limiting
+			const ip =
+				request.headers.get('cf-connecting-ip') ||
+				request.headers.get('x-forwarded-for') ||
+				'unknown'
+			const userAgent = request.headers.get('user-agent') || 'unknown'
+			const anonymousId = `anonymous-${btoa(ip + userAgent).slice(0, 16)}`
+
+			;(request as AuthenticatedRequest).auth = {
+				userId: anonymousId,
+				sessionClaims: {},
+			} as SignedInAuth
+			;(request as AuthenticatedRequest).isAdmin = false
+			;(request as AuthenticatedRequest).hasFairyAccess = true // Allow anonymous fairy access
+			return undefined
 		}
+
 		// Attach auth to request for downstream use
 		;(request as AuthenticatedRequest).auth = auth
 		const hasAdminStatus = await isAdmin(env, auth)

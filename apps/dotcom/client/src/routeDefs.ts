@@ -6,6 +6,7 @@ export const ROUTES = {
 	tlaRoot: `/`,
 	tlaNew: `/new`,
 	pricing: `/pricing`,
+	courseDetailInfo: `/course-detail-info`,
 	tlaFile: `/f/:fileSlug`,
 	tlaFileHistory: `/f/:fileSlug/history`,
 	tlaFileHistorySnapshot: `/f/:fileSlug/history/:timestamp`,

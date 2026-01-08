@@ -124,7 +124,7 @@ export class FairyAppPersistenceManager extends BaseFairyAppManager {
 		if (!this._fileId) return
 
 		const fairyState = this.serializeState()
-		this.fairyApp.tldrawApp.onFairyStateUpdate(this._fileId, fairyState)
+		this.fairyApp.tldrawApp?.onFairyStateUpdate(this._fileId, fairyState)
 	}
 
 	private _fileId: string | null = null
@@ -216,7 +216,7 @@ export class FairyAppPersistenceManager extends BaseFairyAppManager {
 			})
 
 			if (allMessagesToAppend.length > 0) {
-				this.fairyApp.tldrawApp.appendFairyChatMessages(fileId, allMessagesToAppend)
+				this.fairyApp.tldrawApp?.appendFairyChatMessages(fileId, allMessagesToAppend)
 			}
 		}, 2000) // Append maximum every 2 seconds
 

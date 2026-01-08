@@ -1,6 +1,9 @@
+import { SignInButton, useAuth } from '@clerk/clerk-react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 // ✅ swap TldrawAgent -> FairyAgent
 import { FairyAgent } from '../../../fairy/fairy-agent/FairyAgent'
+import { clearLocalSessionState } from '../../utils/local-session-state'
 
 import {
 	LiveKitRoom,
@@ -157,6 +160,7 @@ type ChatMsg =
 	| { id: string; kind: 'user_transcript'; text: string; ts: number }
 	| { id: string; kind: 'ai_speak'; text: string; ts: number }
 	| { id: string; kind: 'ai_question'; text: string; ts: number }
+	| { id: string; kind: 'ai_curriculum'; text: string; ts: number }
 
 function TranscriptionCollector({ onUser }: { onUser: (m: ChatMsg) => void }) {
 	const { localParticipant } = useLocalParticipant()
@@ -210,7 +214,13 @@ function TranscriptionCollector({ onUser }: { onUser: (m: ChatMsg) => void }) {
 	return null
 }
 
-function UnifiedChat({ items }: { items: ChatMsg[] }) {
+function UnifiedChat({
+	items,
+	onViewCourseDetails,
+}: {
+	items: ChatMsg[]
+	onViewCourseDetails: () => void
+}) {
 	const scrollRef = useRef<HTMLDivElement | null>(null)
 	const bottomRef = useRef<HTMLDivElement | null>(null)
 	const [stickToBottom, setStickToBottom] = useState(true)
@@ -248,6 +258,7 @@ function UnifiedChat({ items }: { items: ChatMsg[] }) {
 			{items.map((m) => {
 				const isMe = m.kind === 'user_transcript'
 				const isQuestion = m.kind === 'ai_question'
+				const isCurriculum = m.kind === 'ai_curriculum'
 
 				return (
 					<div
@@ -268,23 +279,60 @@ function UnifiedChat({ items }: { items: ChatMsg[] }) {
 								whiteSpace: 'pre-wrap',
 								wordBreak: 'break-word',
 								color: '#fff',
-								border: isQuestion
-									? '1px solid rgba(250, 204, 21, 0.45)'
-									: '1px solid rgba(255,255,255,0.12)',
+								border: isCurriculum
+									? '1px solid rgba(59, 130, 246, 0.5)'
+									: isQuestion
+										? '1px solid rgba(250, 204, 21, 0.45)'
+										: '1px solid rgba(255,255,255,0.12)',
 								background: isMe
 									? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-									: isQuestion
-										? 'linear-gradient(135deg, #1f2937 0%, #111827 100%)'
-										: 'linear-gradient(135deg, #2d3748 0%, #1a202c 100%)',
+									: isCurriculum
+										? 'linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%)'
+										: isQuestion
+											? 'linear-gradient(135deg, #1f2937 0%, #111827 100%)'
+											: 'linear-gradient(135deg, #2d3748 0%, #1a202c 100%)',
 							}}
 						>
-							{isQuestion ? (
+							{isCurriculum ? (
+								<div style={{ fontSize: 12, opacity: 0.8, marginBottom: 6, color: '#60a5fa' }}>
+									📚 Course Curriculum
+								</div>
+							) : isQuestion ? (
 								<div style={{ fontSize: 12, opacity: 0.8, marginBottom: 6 }}>
 									Please answer this Question
 								</div>
 							) : null}
 
 							{m.text}
+
+							{isCurriculum && (
+								<button
+									onClick={onViewCourseDetails}
+									style={{
+										marginTop: 12,
+										width: '100%',
+										padding: '10px 16px',
+										borderRadius: 10,
+										border: 'none',
+										background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+										color: '#fff',
+										fontSize: 14,
+										fontWeight: 600,
+										cursor: 'pointer',
+										transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+									}}
+									onMouseEnter={(e) => {
+										e.currentTarget.style.transform = 'translateY(-1px)'
+										e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.4)'
+									}}
+									onMouseLeave={(e) => {
+										e.currentTarget.style.transform = 'translateY(0)'
+										e.currentTarget.style.boxShadow = 'none'
+									}}
+								>
+									View Course Details →
+								</button>
+							)}
 						</div>
 					</div>
 				)
@@ -632,6 +680,32 @@ function DataHandler({
 
 				return
 			}
+
+			// --- UI Curriculum Details ---
+			if (topic === 'ui.curriculum_details') {
+				const payloadText = new TextDecoder().decode(payload)
+				let decoded: any
+				try {
+					decoded = JSON.parse(payloadText)
+				} catch (e) {
+					console.error('Failed to parse ui.curriculum_details payload:', e)
+					return
+				}
+
+				const text = (decoded?.text ?? '').trim()
+				if (!text) return
+
+				const ts = Date.parse(decoded?.ts ?? '') || Number(decoded?.timestamp ?? '') || Date.now()
+
+				onUi({
+					id: `ui.curriculum_details:${decoded?.ts ?? ts}:${text.slice(0, 16)}`,
+					kind: 'ai_curriculum',
+					text,
+					ts,
+				})
+
+				return
+			}
 		}
 
 		room.on(RoomEvent.DataReceived, handleDataReceived)
@@ -698,6 +772,8 @@ function DataHandler({
 }
 
 export function ChatPanel({ agent }: { agent?: FairyAgent }) {
+	const auth = useAuth()
+	const navigate = useNavigate()
 	const [lkConnect, setLkConnect] = useState(false)
 	const [lkToken, setLkToken] = useState<string | undefined>()
 	const [lkUrl, setLkUrl] = useState<string | undefined>()
@@ -710,6 +786,17 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 	const pendingDrawRequestsRef = useRef<Map<string, { request_id: string; previousMode: string }>>(
 		new Map()
 	)
+
+	const handleLogout = useCallback(() => {
+		auth.signOut().then(() => {
+			clearLocalSessionState()
+			navigate('/')
+		})
+	}, [auth, navigate])
+
+	const handleViewCourseDetails = useCallback(() => {
+		window.open('/course-detail-info', '_blank')
+	}, [])
 
 	const pushMessage = useCallback((m: ChatMsg) => {
 		setMessages((prev) => {
@@ -741,14 +828,17 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 		setLkLoading(true)
 		console.log('Starting LiveKit session')
 
+		// Use different prompts based on authentication status
+		const isLoggedIn = auth.isSignedIn
+		const prompt = isLoggedIn
+			? "start teaching me the below content, cover the complete content and don't divert much"
+			: 'I want to talk you about the course and how can you help me in learning?'
+
 		try {
 			const response = await fetch('http://localhost:3001/start-learning', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					prompt:
-						"start teaching me the below content, cover the complete content and don't divert much",
-				}),
+				body: JSON.stringify({ prompt }),
 			})
 
 			const data: any = await response.json()
@@ -765,14 +855,14 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 			}
 
 			setLkToken(tokenToUse)
-			setLkUrl('wss://project-123-xf6t2jp0.livekit.cloud')
+			setLkUrl('wss://project-1234-6tcs93tg.livekit.cloud')
 			setLkConnect(true)
 		} catch {
 			setError('Failed to start learning session')
 		} finally {
 			setLkLoading(false)
 		}
-	}, [lkConnect])
+	}, [lkConnect, auth.isSignedIn])
 
 	// Show loading state if agent is not available yet
 	if (!agent) {
@@ -822,6 +912,37 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 				>
 					{lkConnect ? 'Stop Learning' : lkLoading ? 'Starting…' : 'Start Learning'}
 				</button>
+
+				{auth.isSignedIn ? (
+					<button
+						onClick={handleLogout}
+						style={{
+							padding: '8px 10px',
+							borderRadius: 10,
+							background: '#ef4444',
+							color: 'white',
+							border: 'none',
+							cursor: 'pointer',
+						}}
+					>
+						Logout
+					</button>
+				) : (
+					<SignInButton mode="modal">
+						<button
+							style={{
+								padding: '8px 10px',
+								borderRadius: 10,
+								background: '#3b82f6',
+								color: 'white',
+								border: 'none',
+								cursor: 'pointer',
+							}}
+						>
+							Login
+						</button>
+					</SignInButton>
+				)}
 
 				{error ? <span style={{ color: 'salmon', fontSize: 12 }}>{error}</span> : null}
 			</div>
@@ -892,7 +1013,7 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 									pendingDrawRequestsRef={pendingDrawRequestsRef}
 								/>
 								<TranscriptionCollector onUser={pushMessage} />
-								<UnifiedChat items={messages} />
+								<UnifiedChat items={messages} onViewCourseDetails={handleViewCourseDetails} />
 							</div>
 						</div>
 					</LiveKitRoom>

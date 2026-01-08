@@ -346,8 +346,8 @@ function TlaEditorInner({ fileSlug, deepLinks, onLeaderAgentChange }: TlaEditorP
 	}
 
 	const instanceComponents = useMemo((): TLComponents => {
-		// User can control their own fairies if they have fairy access and it's enabled
-		const canControlFairies = app && hasFairyAccess && areFairiesEnabled
+		// User can control fairies if fairies are enabled (works for both logged in and anonymous users)
+		const canControlFairies = areFairiesEnabled
 
 		// Show fairy UI (HUD, remote fairies) if feature flag is enabled and local toggle is on
 		// This allows guests to see fairies on shared files without requiring login
@@ -448,15 +448,13 @@ function TlaEditorInner({ fileSlug, deepLinks, onLeaderAgentChange }: TlaEditorP
 				<SneakyToolSwitcher />
 				{app && <SneakyTldrawFileDropHandler />}
 				<SneakyLargeFileHander />
-				{app && (
-					<Suspense fallback={null}>
-						<FairyAppProvider
-							fileId={fileId}
-							onMount={setHoistedFairyApp}
-							onUnmount={handleUnmount}
-						/>
-					</Suspense>
-				)}
+				<Suspense fallback={null}>
+					<FairyAppProvider
+						fileId={fileId}
+						onMount={setHoistedFairyApp}
+						onUnmount={handleUnmount}
+					/>
+				</Suspense>
 			</Tldraw>
 		</TlaEditorWrapper>
 	)

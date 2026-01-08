@@ -268,21 +268,16 @@ export class FairyAgent {
 			velocity: { x: 0, y: 0 },
 		})
 
+		// Always use the same default fairy config for all users (logged in or anonymous)
 		this.$fairyConfig = computed<FairyConfig>(`fairy-config-${id}`, () => {
-			const userFairies = this.fairyApp.tldrawApp.getUser().fairies
-
-			if (!userFairies) {
-				return {
-					name: getRandomFairyName(),
-					outfit: { body: 'plain', hat: 'top', wings: 'plain' },
-					hat: getRandomFairyHat(),
-					hatColor: getRandomFairyHatColor(),
-					legLength: getRandomLegLength(),
-					version: 2,
-				} satisfies FairyConfig
-			}
-
-			return JSON.parse(userFairies)[id] as FairyConfig
+			return {
+				name: getRandomFairyName(),
+				outfit: { body: 'plain', hat: 'top', wings: 'plain' },
+				hat: getRandomFairyHat(),
+				hatColor: getRandomFairyHatColor(),
+				legLength: getRandomLegLength(),
+				version: 2,
+			} satisfies FairyConfig
 		})
 
 		this.onError = onError
@@ -476,6 +471,13 @@ export class FairyAgent {
 	 * @returns A promise for when the agent has finished its work.
 	 */
 	async prompt(input: AgentInput, { nested = false }: { nested?: boolean } = {}) {
+		console.log('[FairyAgent.prompt] Called with input:', {
+			inputType: typeof input,
+			hasAgentMessages: typeof input === 'object' && input !== null && 'agentMessages' in input,
+			hasUserMessages: typeof input === 'object' && input !== null && 'userMessages' in input,
+			nested,
+			currentMode: this.mode.getMode(),
+		})
 		if (this.requests.isGenerating() && !nested) {
 			throw new Error('Agent is already prompting. Please wait for the current prompt to finish.')
 		}
@@ -568,7 +570,13 @@ export class FairyAgent {
 	 * to abort the request.
 	 */
 	async request(input: AgentInput) {
+		console.log('[FairyAgent.request] Called, preparing request...')
 		const request = this.requests.getFullRequestFromInput(input)
+		console.log('[FairyAgent.request] Request prepared:', {
+			agentMessagesCount: request.agentMessages.length,
+			userMessagesCount: request.userMessages.length,
+			source: request.source,
+		})
 
 		// Interrupt any currently active request
 		if (this.requests.getActiveRequest() !== null) {
@@ -731,16 +739,37 @@ export class FairyAgent {
 			}
 		}
 
-		console.log(FAIRY_WORKER)
-		const res = await fetch(`${FAIRY_WORKER}/stream-actions`, {
-			method: 'POST',
-			body: JSON.stringify(prompt),
-			headers,
-			signal,
+		console.log('[FairyAgent._streamActions] FAIRY_WORKER:', FAIRY_WORKER)
+		console.log('[FairyAgent._streamActions] Sending request to:', `${FAIRY_WORKER}/stream-actions`)
+		console.log('[FairyAgent._streamActions] Request headers:', {
+			hasAuth: !!headers['Authorization'],
+			contentType: headers['Content-Type'],
 		})
+		console.log('[FairyAgent._streamActions] Prompt keys:', Object.keys(prompt))
+
+		let res: Response
+		try {
+			res = await fetch(`${FAIRY_WORKER}/stream-actions`, {
+				method: 'POST',
+				body: JSON.stringify(prompt),
+				headers,
+				signal,
+			})
+			console.log('[FairyAgent._streamActions] Response status:', res.status, res.statusText)
+		} catch (fetchErr) {
+			console.error('[FairyAgent._streamActions] Fetch error:', fetchErr)
+			throw fetchErr
+		}
 
 		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({ error: 'Unknown error' }))
+			const errorText = await res.text().catch(() => '')
+			console.error('[FairyAgent._streamActions] Error response body:', errorText)
+			let errorData: any = { error: 'Unknown error' }
+			try {
+				errorData = JSON.parse(errorText)
+			} catch {
+				errorData = { error: errorText || 'Request failed' }
+			}
 			throw new Error(errorData.error || 'Request failed')
 		}
 
@@ -874,14 +903,14 @@ export class FairyAgent {
 	 * @param partial - The partial configuration to update.
 	 */
 	updateFairyConfig(partial: Partial<FairyConfig>) {
-		this.fairyApp.tldrawApp.z.mutate.user.updateFairyConfig({
+		this.fairyApp.tldrawApp?.z.mutate.user.updateFairyConfig({
 			id: this.id,
 			properties: partial,
 		})
 	}
 
 	public deleteFairyConfig() {
-		this.fairyApp.tldrawApp.z.mutate.user.deleteFairyConfig({ id: this.id })
+		this.fairyApp.tldrawApp?.z.mutate.user.deleteFairyConfig({ id: this.id })
 	}
 
 	private requestAgentActions({ agent, request }: { agent: FairyAgent; request: AgentRequest }) {
