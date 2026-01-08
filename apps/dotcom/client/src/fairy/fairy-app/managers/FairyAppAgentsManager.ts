@@ -89,7 +89,7 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 			// Keep only the first MAX_FAIRY_COUNT fairies
 			const excessIds = configIds.slice(MAX_FAIRY_COUNT)
 			excessIds.forEach((id) => {
-				this.fairyApp.tldrawApp.z.mutate.user.deleteFairyConfig({ id })
+				this.fairyApp.tldrawApp?.z.mutate.user.deleteFairyConfig({ id })
 			})
 			// Update configIds to only include the kept fairies
 			configIds.length = MAX_FAIRY_COUNT
@@ -131,6 +131,37 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 	}
 
 	/**
+	 * Create default agents for anonymous users without persistence.
+	 * This creates agents in-memory only, they won't be saved to the database.
+	 */
+	createDefaultAgentsForAnonymous(options: {
+		onError(e: any): void
+		getToken(): Promise<string | undefined>
+	}) {
+		const existingAgents = this.$agents.get()
+		if (existingAgents.length > 0) return // Already has agents
+
+		const newAgents: FairyAgent[] = []
+
+		// Create MAX_FAIRY_COUNT agents with default configs
+		for (let i = 0; i < MAX_FAIRY_COUNT; i++) {
+			const id = toAgentId(`anonymous-fairy-${i}`)
+
+			const agent = new FairyAgent({
+				id,
+				fairyApp: this.fairyApp,
+				editor: this.fairyApp.editor,
+				onError: options.onError,
+				getToken: options.getToken,
+			})
+
+			newAgents.push(agent)
+		}
+
+		this.$agents.set(newAgents)
+	}
+
+	/**
 	 * Create a new fairy configuration and add it to the user's settings.
 	 * Returns the ID of the new fairy.
 	 *
@@ -161,8 +192,8 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 			version: 2,
 		}
 
-		// Add the config to the user's settings
-		this.fairyApp.tldrawApp.z.mutate.user.updateFairyConfig({ id, properties: config })
+		// Add the config to the user's settings (only if logged in)
+		this.fairyApp.tldrawApp?.z.mutate.user.updateFairyConfig({ id, properties: config })
 
 		return id
 	}
@@ -182,7 +213,7 @@ export class FairyAppAgentsManager extends BaseFairyAppManager {
 				config.version = 2
 			}
 			if (didMigrate) {
-				this.fairyApp.tldrawApp.z.mutate.user.updateFairyConfig({ id, properties: config })
+				this.fairyApp.tldrawApp?.z.mutate.user.updateFairyConfig({ id, properties: config })
 			}
 		}
 	}

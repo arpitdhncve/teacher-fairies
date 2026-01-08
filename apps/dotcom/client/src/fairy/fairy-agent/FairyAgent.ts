@@ -268,21 +268,16 @@ export class FairyAgent {
 			velocity: { x: 0, y: 0 },
 		})
 
+		// Always use the same default fairy config for all users (logged in or anonymous)
 		this.$fairyConfig = computed<FairyConfig>(`fairy-config-${id}`, () => {
-			const userFairies = this.fairyApp.tldrawApp.getUser().fairies
-
-			if (!userFairies) {
-				return {
-					name: getRandomFairyName(),
-					outfit: { body: 'plain', hat: 'top', wings: 'plain' },
-					hat: getRandomFairyHat(),
-					hatColor: getRandomFairyHatColor(),
-					legLength: getRandomLegLength(),
-					version: 2,
-				} satisfies FairyConfig
-			}
-
-			return JSON.parse(userFairies)[id] as FairyConfig
+			return {
+				name: getRandomFairyName(),
+				outfit: { body: 'plain', hat: 'top', wings: 'plain' },
+				hat: getRandomFairyHat(),
+				hatColor: getRandomFairyHatColor(),
+				legLength: getRandomLegLength(),
+				version: 2,
+			} satisfies FairyConfig
 		})
 
 		this.onError = onError
@@ -874,14 +869,14 @@ export class FairyAgent {
 	 * @param partial - The partial configuration to update.
 	 */
 	updateFairyConfig(partial: Partial<FairyConfig>) {
-		this.fairyApp.tldrawApp.z.mutate.user.updateFairyConfig({
+		this.fairyApp.tldrawApp?.z.mutate.user.updateFairyConfig({
 			id: this.id,
 			properties: partial,
 		})
 	}
 
 	public deleteFairyConfig() {
-		this.fairyApp.tldrawApp.z.mutate.user.deleteFairyConfig({ id: this.id })
+		this.fairyApp.tldrawApp?.z.mutate.user.deleteFairyConfig({ id: this.id })
 	}
 
 	private requestAgentActions({ agent, request }: { agent: FairyAgent; request: AgentRequest }) {

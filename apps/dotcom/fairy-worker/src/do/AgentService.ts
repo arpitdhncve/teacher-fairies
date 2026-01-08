@@ -496,6 +496,19 @@ export class AgentService {
 			await result.usage
 		} catch (error: any) {
 			if (signal?.aborted || error?.name === 'AbortError') return
+			// Log detailed error information for debugging
+			console.error('=== OPENROUTER API ERROR ===')
+			console.error('Error name:', error?.name)
+			console.error('Error message:', error?.message)
+			console.error('Error cause:', error?.cause)
+			console.error('Error data:', JSON.stringify(error?.data, null, 2))
+			console.error('Error response:', error?.response)
+			console.error('Error status:', error?.status || error?.statusCode)
+			console.error(
+				'Full error object:',
+				JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+			)
+			console.error('=== END OPENROUTER API ERROR ===')
 			throw error
 		}
 	}

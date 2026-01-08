@@ -1,4 +1,4 @@
-import { useAuth } from '@clerk/clerk-react'
+import { SignInButton, useAuth } from '@clerk/clerk-react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 // ✅ swap TldrawAgent -> FairyAgent
@@ -753,14 +753,17 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 		setLkLoading(true)
 		console.log('Starting LiveKit session')
 
+		// Use different prompts based on authentication status
+		const isLoggedIn = auth.isSignedIn
+		const prompt = isLoggedIn
+			? "start teaching me the below content, cover the complete content and don't divert much"
+			: 'I want to talk you about the course and how can you help me in learning?'
+
 		try {
 			const response = await fetch('http://localhost:3001/start-learning', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					prompt:
-						"start teaching me the below content, cover the complete content and don't divert much",
-				}),
+				body: JSON.stringify({ prompt }),
 			})
 
 			const data: any = await response.json()
@@ -777,14 +780,14 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 			}
 
 			setLkToken(tokenToUse)
-			setLkUrl('wss://project-123-xf6t2jp0.livekit.cloud')
+			setLkUrl('wss://project-1234-6tcs93tg.livekit.cloud')
 			setLkConnect(true)
 		} catch {
 			setError('Failed to start learning session')
 		} finally {
 			setLkLoading(false)
 		}
-	}, [lkConnect])
+	}, [lkConnect, auth.isSignedIn])
 
 	// Show loading state if agent is not available yet
 	if (!agent) {
@@ -835,19 +838,36 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 					{lkConnect ? 'Stop Learning' : lkLoading ? 'Starting…' : 'Start Learning'}
 				</button>
 
-				<button
-					onClick={handleLogout}
-					style={{
-						padding: '8px 10px',
-						borderRadius: 10,
-						background: '#ef4444',
-						color: 'white',
-						border: 'none',
-						cursor: 'pointer',
-					}}
-				>
-					Logout
-				</button>
+				{auth.isSignedIn ? (
+					<button
+						onClick={handleLogout}
+						style={{
+							padding: '8px 10px',
+							borderRadius: 10,
+							background: '#ef4444',
+							color: 'white',
+							border: 'none',
+							cursor: 'pointer',
+						}}
+					>
+						Logout
+					</button>
+				) : (
+					<SignInButton mode="modal">
+						<button
+							style={{
+								padding: '8px 10px',
+								borderRadius: 10,
+								background: '#3b82f6',
+								color: 'white',
+								border: 'none',
+								cursor: 'pointer',
+							}}
+						>
+							Login
+						</button>
+					</SignInButton>
+				)}
 
 				{error ? <span style={{ color: 'salmon', fontSize: 12 }}>{error}</span> : null}
 			</div>

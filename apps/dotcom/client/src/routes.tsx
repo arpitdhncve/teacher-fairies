@@ -62,7 +62,11 @@ export const router = createRoutesFromElements(
 		}}
 	>
 		<Route lazy={() => import('./tla/providers/TlaRootProviders')}>
-			<Route path={ROUTES.tlaRoot} lazy={() => import('./tla/pages/local')} />
+			{/* Redirect root to the default fairy file */}
+			<Route
+				path={ROUTES.tlaRoot}
+				loader={() => redirect('/f/5wE5y2SCWHUekvlcTut6h?d=v409.0.1103.832.page')}
+			/>
 			<Route path={ROUTES.pricing} lazy={() => import('./pages/pricing')} />
 			<Route element={<NoIndex />}>
 				<Route path={ROUTES.tlaNew} lazy={() => import('./pages/tla-new')} />

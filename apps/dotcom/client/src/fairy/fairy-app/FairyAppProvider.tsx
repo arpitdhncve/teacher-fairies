@@ -1,7 +1,7 @@
 import { PersistedFairyConfigs } from '@tldraw/fairy-shared'
 import { createContext, memo, ReactNode, useCallback, useContext, useEffect, useState } from 'react'
 import { useEditor, useToasts, useValue } from 'tldraw'
-import { useApp } from '../../tla/hooks/useAppState'
+import { useMaybeApp } from '../../tla/hooks/useAppState'
 import { useTldrawUser } from '../../tla/hooks/useUser'
 import { FairyThrowTool } from '../FairyThrowTool'
 import { FairyApp } from './FairyApp'
@@ -37,16 +37,19 @@ export const FairyAppProvider = memo(function ({
 	onUnmount,
 }: FairyAppProviderProps) {
 	const editor = useEditor()
-	const app = useApp()
+	const app = useMaybeApp()
 	const user = useTldrawUser()
 	const toasts = useToasts()
 	const isReadOnly = useValue('isReadOnly', () => editor.getIsReadonly(), [editor])
 	const [fairyApp, setFairyApp] = useState<FairyApp | null>(null)
 
-	// Get fairy configs from app
+	// Get fairy configs from app (empty for anonymous users)
 	const fairyConfigs = useValue(
 		'fairyConfigs',
-		() => JSON.parse(app?.getUser().fairies || '{}') as PersistedFairyConfigs,
+		() => {
+			if (!app) return {} as PersistedFairyConfigs
+			return JSON.parse(app.getUser().fairies || '{}') as PersistedFairyConfigs
+		},
 		[app]
 	)
 
@@ -66,6 +69,12 @@ export const FairyAppProvider = memo(function ({
 		(e: any) => {
 			const message = typeof e === 'string' ? e : e instanceof Error && e.message
 			const isRateLimit = message && message.toLowerCase().includes('rate limit')
+
+			// For anonymous users, just log to console
+			if (!app) {
+				console.error('Fairy error:', e)
+				return
+			}
 
 			toasts.addToast({
 				title: isRateLimit
@@ -88,8 +97,8 @@ export const FairyAppProvider = memo(function ({
 	useEffect(() => {
 		if (isReadOnly) return
 
-		// Create the FairyApp instance
-		const instance = new FairyApp(editor, app)
+		// Create the FairyApp instance (pass null for anonymous users)
+		const instance = new FairyApp(editor, app ?? null)
 		setFairyApp(instance)
 
 		// Register the FairyThrowTool
@@ -104,19 +113,34 @@ export const FairyAppProvider = memo(function ({
 		}
 	}, [editor, app, isReadOnly])
 
-	// Sync agents with fairy configs
+	// Sync agents with fairy configs (or create default agents for anonymous users)
 	useEffect(() => {
 		if (!fairyApp || isReadOnly) return
+
+		if (!app) {
+			// For anonymous users, create default agents without persistence
+			fairyApp.agents.createDefaultAgentsForAnonymous({
+				onError: handleError,
+				getToken,
+			})
+			return
+		}
 
 		fairyApp.agents.syncAgentsWithConfigs(fairyConfigs, {
 			onError: handleError,
 			getToken,
 		})
-	}, [fairyApp, fairyConfigs, handleError, getToken, isReadOnly])
+	}, [fairyApp, fairyConfigs, handleError, getToken, isReadOnly, app])
 
-	// Load persisted state
+	// Load persisted state (skip for anonymous users)
 	useEffect(() => {
 		if (!fairyApp || !fileId) return
+
+		// For anonymous users, skip file state loading and just call onMount
+		if (!app) {
+			onMount(fairyApp)
+			return () => onUnmount()
+		}
 
 		const fileState = app.getFileState(fileId)
 		const hasPersistedState = !!fileState?.fairyState
