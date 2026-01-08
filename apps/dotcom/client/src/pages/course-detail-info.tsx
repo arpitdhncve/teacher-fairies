@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useDialogs } from 'tldraw'
+import { TlaSignInDialog } from '../tla/components/dialogs/TlaSignInDialog'
 import {
 	MODULES,
 	getFaviconUrl,
@@ -26,6 +28,7 @@ export function Component() {
 	const [activeTab, setActiveTab] = useState<TabType>('curriculum')
 	// Removed initial expanded state for premium "clean" look
 	const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set())
+	const { addDialog } = useDialogs()
 
 	const toggleModule = (moduleId: number) => {
 		setExpandedModules((prev) => {
@@ -39,9 +42,10 @@ export function Component() {
 		})
 	}
 
-	const scrollToPricing = () => {
-		setActiveTab('pricing')
-		window.scrollTo({ top: 0, behavior: 'smooth' })
+	const openLoginDialog = () => {
+		addDialog({
+			component: (props) => <TlaSignInDialog {...props} skipRedirect />,
+		})
 	}
 
 	return (
@@ -76,7 +80,7 @@ export function Component() {
 
 					{/* Right - CTA */}
 					<div className={headerStyles.ctaGroup}>
-						<div className={headerStyles.spotlightBadge} onClick={scrollToPricing}>
+						<div className={headerStyles.spotlightBadge} onClick={openLoginDialog}>
 							<span className={headerStyles.sparkleIcon}>✨</span>1 Hour Free
 						</div>
 					</div>
@@ -299,6 +303,15 @@ function ConceptCard({ concept }: { concept: Concept }) {
 
 // Pricing Section
 function PricingSection() {
+	const { addDialog } = useDialogs()
+
+	const handleTryFree = () => {
+		// Open login dialog
+		addDialog({
+			component: (props) => <TlaSignInDialog {...props} skipRedirect />,
+		})
+	}
+
 	return (
 		<div className={pricingStyles.section}>
 			<div className={pricingStyles.header}>
@@ -308,44 +321,11 @@ function PricingSection() {
 				</p>
 			</div>
 
-			{/* 10x Value Visual */}
-			<div className={pricingStyles.valueVisual}>
-				<div className={pricingStyles.visualTitle}>Value Comparison (20 Hours)</div>
-				<div className={pricingStyles.comparisonColumns}>
-					<div>
-						<div className={pricingStyles.comparisonRow}>
-							<div className={pricingStyles.barLabel}>Eazit</div>
-							<div className={pricingStyles.barContainer}>
-								<div
-									className={pricingStyles.bar}
-									style={{ width: '100px', background: 'var(--c-text-primary)', color: 'white' }}
-								>
-									$81
-								</div>
-							</div>
-						</div>
-						<div className={pricingStyles.comparisonRow}>
-							<div className={pricingStyles.barLabel}>Mentors</div>
-							<div className={pricingStyles.barContainer}>
-								<div
-									className={pricingStyles.bar}
-									style={{ width: '100%', background: '#cbd5e1', color: '#64748b' }}
-								>
-									$1,000+
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-				{/* Value text below columns */}
-				<div className={pricingStyles.valueMessage}>
-					<span className={pricingStyles.checkIcon}>✨</span> 10x More Value
-				</div>
-			</div>
-
-			{/* Try Free CTA */}
+			{/* Try Course CTA */}
 			<div className={pricingStyles.tryFreeSection}>
-				<button className={pricingStyles.tryFreeButton}>Try Free</button>
+				<button className={pricingStyles.tryFreeButton} onClick={handleTryFree}>
+					🎓 Try Course - 1 Hour Free
+				</button>
 				<span className={pricingStyles.tryFreeNote}>No credit card required</span>
 			</div>
 
@@ -376,8 +356,8 @@ function PricingSection() {
 					<div className={pricingStyles.discountBadge}>10% OFF</div>
 					<h3 className={pricingStyles.cardTitle}>Pro Pack</h3>
 					<div className={pricingStyles.price}>
-						<span className={pricingStyles.originalPrice}>$90</span>
-						<span className={pricingStyles.amount}>$81</span>
+						<span className={pricingStyles.originalPrice}>$100</span>
+						<span className={pricingStyles.amount}>$90</span>
 						<span className={pricingStyles.unit}>total</span>
 					</div>
 					<ul className={pricingStyles.features}>
@@ -392,6 +372,22 @@ function PricingSection() {
 						</li>
 					</ul>
 					<button className={pricingStyles.button}>Purchase</button>
+				</div>
+			</div>
+
+			{/* Value Props Below Cards */}
+			<div className={pricingStyles.valuePropsContainer}>
+				<div className={pricingStyles.valuePropBadge}>
+					<span className={pricingStyles.valuePropIcon}>💰</span>
+					<span>10x Cheaper than Human Engineer</span>
+				</div>
+				<div className={pricingStyles.valuePropBadge}>
+					<span className={pricingStyles.valuePropIcon}>🕐</span>
+					<span>24/7 Available</span>
+				</div>
+				<div className={pricingStyles.valuePropBadge}>
+					<span className={pricingStyles.valuePropIcon}>💬</span>
+					<span>No Hesitation in Asking Anything</span>
 				</div>
 			</div>
 		</div>
