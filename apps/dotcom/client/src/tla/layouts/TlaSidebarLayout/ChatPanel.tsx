@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 // ✅ swap TldrawAgent -> FairyAgent
 import { FairyAgent } from '../../../fairy/fairy-agent/FairyAgent'
+import { useViewportContext } from '../../hooks/useViewportContext'
 import { clearLocalSessionState } from '../../utils/local-session-state'
 
 import {
@@ -19,16 +20,72 @@ import { ConnectionState, RoomEvent } from 'livekit-client'
 
 function ConnectionStatus() {
 	const s = useConnectionState()
-	const label =
-		s === ConnectionState.Connected
-			? 'Connected'
-			: s === ConnectionState.Connecting
-				? 'Connecting…'
-				: s === ConnectionState.Disconnected
-					? 'Disconnected'
-					: String(s)
 
-	return <div style={{ fontSize: 12, opacity: 0.8 }}>{label}</div>
+	// Don't show anything if connected, or maybe a subtle dot?
+	// Let's go with a subtle status indicator used in the Control Deck instead.
+	// For now, let's make it a standalone small badge if not connected.
+
+	if (s === ConnectionState.Connected) {
+		return (
+			<div
+				style={{
+					display: 'flex',
+					alignItems: 'center',
+					gap: 6,
+					fontSize: 11,
+					color: 'rgba(255,255,255,0.4)',
+					fontWeight: 500,
+					letterSpacing: '0.05em',
+					textTransform: 'uppercase',
+				}}
+			>
+				<div
+					style={{
+						width: 6,
+						height: 6,
+						borderRadius: '50%',
+						background: '#10b981',
+						boxShadow: '0 0 8px #10b981',
+					}}
+				/>
+				Session Active
+			</div>
+		)
+	}
+
+	const label =
+		s === ConnectionState.Connecting
+			? 'Connecting...'
+			: s === ConnectionState.Disconnected
+				? 'Disconnected'
+				: String(s)
+
+	return (
+		<div
+			style={{
+				display: 'inline-flex',
+				alignItems: 'center',
+				gap: 8,
+				fontSize: 12,
+				color: '#fbbf24', // Amber for non-connected states
+				background: 'rgba(251, 191, 36, 0.1)',
+				padding: '4px 10px',
+				borderRadius: 99,
+				border: '1px solid rgba(251, 191, 36, 0.2)',
+			}}
+		>
+			<div
+				style={{
+					width: 6,
+					height: 6,
+					borderRadius: '50%',
+					background: 'currentColor',
+					animation: 'pulse 1.5s infinite',
+				}}
+			/>
+			{label}
+		</div>
+	)
 }
 
 /**
@@ -120,37 +177,113 @@ function MicPushToTalk({ hotkey = 'Space' }: { hotkey?: string }) {
 		<div
 			style={{
 				display: 'flex',
-				alignItems: 'center',
-				gap: 10,
+				flexDirection: 'column',
+				gap: 8,
 				marginTop: 8,
-				flexWrap: 'wrap',
 			}}
 		>
+			<style>
+				{`
+					@keyframes mic-pulse {
+						0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); }
+						70% { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); }
+						100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+					}
+					@keyframes mic-wave {
+						0%, 100% { transform: scaleY(1); }
+						50% { transform: scaleY(1.5); }
+					}
+				`}
+			</style>
+
 			<div
 				style={{
-					fontSize: 12,
-					padding: '4px 10px',
-					borderRadius: 999,
-					border: '1px solid rgba(255,255,255,0.12)',
-					background: micEnabled ? 'rgba(34, 197, 94, 0.18)' : 'rgba(239, 68, 68, 0.18)',
-					color: '#fff',
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'space-between',
+					padding: '6px 8px 6px 16px',
+					borderRadius: 16,
+					background: 'rgba(255, 255, 255, 0.03)',
+					border: '1px solid rgba(255, 255, 255, 0.08)',
+					backdropFilter: 'blur(10px)',
 				}}
-				title={`Hold ${hotkey} to talk`}
 			>
-				Mic: {micEnabled ? 'Unmuted (talking)' : 'Muted'}
+				{/* Status Indicator */}
+				<div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+					<div
+						style={{
+							width: 10,
+							height: 10,
+							borderRadius: '50%',
+							background: micEnabled ? '#4ade80' : '#ef4444',
+							boxShadow: micEnabled ? '0 0 12px #4ade80' : 'none',
+							animation: micEnabled ? 'mic-pulse 2s infinite' : 'none',
+							transition: 'all 0.3s ease',
+						}}
+					/>
+					<div
+						style={{
+							fontSize: 13,
+							fontWeight: 500,
+							color: micEnabled ? '#ffffff' : 'rgba(255,255,255,0.6)',
+							letterSpacing: '0.02em',
+							width: 80, // Fixed width to prevent layout jump
+						}}
+					>
+						{micEnabled ? 'Standard' : 'Muted'}
+					</div>
+				</div>
+
+				{/* Action Button */}
+				<button
+					onClick={() => setMic(!micEnabled)}
+					disabled={connection !== ConnectionState.Connected}
+					style={{
+						padding: '8px 16px',
+						borderRadius: 10,
+						fontSize: 13,
+						fontWeight: 600,
+						border: 'none',
+						background: micEnabled
+							? 'rgba(255,255,255,0.1)'
+							: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+						color: '#ffffff',
+						cursor: 'pointer',
+						transition: 'all 0.2s ease',
+						boxShadow: micEnabled ? 'none' : '0 2px 6px rgba(59, 130, 246, 0.3)',
+					}}
+					onMouseEnter={(e) => {
+						if (!micEnabled && !e.currentTarget.disabled) {
+							e.currentTarget.style.filter = 'brightness(1.1)'
+						}
+					}}
+					onMouseLeave={(e) => {
+						e.currentTarget.style.filter = 'brightness(1)'
+					}}
+				>
+					{micEnabled ? 'Mute' : 'Unmute'}
+				</button>
 			</div>
 
-			<button
-				onClick={() => setMic(!micEnabled)}
-				style={{ padding: '6px 10px', borderRadius: 10 }}
-				disabled={connection !== ConnectionState.Connected}
-				title="Manual toggle"
+			{/* Footnote */}
+			<div
+				style={{
+					fontSize: 11,
+					color: 'rgba(255,255,255,0.4)',
+					textAlign: 'center',
+					letterSpacing: '0.03em',
+				}}
 			>
-				{micEnabled ? 'Mute' : 'Unmute'}
-			</button>
-
-			<div style={{ fontSize: 12, opacity: 0.75 }}>
-				Hold <b>{hotkey}</b> to speak
+				Hold{' '}
+				<b
+					style={{
+						color: 'rgba(255,255,255,0.7)',
+						borderBottom: '1px dotted rgba(255,255,255,0.3)',
+					}}
+				>
+					{hotkey}
+				</b>{' '}
+				to speak temporarily
 			</div>
 		</div>
 	)
@@ -244,15 +377,19 @@ function UnifiedChat({
 			ref={scrollRef}
 			onScroll={onScroll}
 			style={{
-				marginTop: 12,
+				marginTop: 16,
 				width: '100%',
 				flex: 1,
 				minHeight: 0,
 				overflowY: 'auto',
 				display: 'flex',
 				flexDirection: 'column',
-				gap: 10,
-				paddingRight: 6,
+				gap: 16,
+				paddingRight: 8,
+				paddingLeft: 4,
+				// Custom scrollbar styling via CSS would be ideal, but inline for now:
+				scrollbarWidth: 'thin',
+				scrollbarColor: 'rgba(255,255,255,0.1) transparent',
 			}}
 		>
 			{items.map((m) => {
@@ -267,67 +404,113 @@ function UnifiedChat({
 							display: 'flex',
 							justifyContent: isMe ? 'flex-end' : 'flex-start',
 							width: '100%',
+							padding: '0 4px',
 						}}
 					>
 						<div
 							style={{
 								maxWidth: '85%',
-								padding: '10px 14px',
-								borderRadius: 16,
-								fontSize: 14,
-								lineHeight: 1.4,
+								padding: '12px 16px',
+								borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+								fontSize: '14.5px',
+								lineHeight: 1.5,
+								letterSpacing: '0.01em',
 								whiteSpace: 'pre-wrap',
 								wordBreak: 'break-word',
-								color: '#fff',
-								border: isCurriculum
-									? '1px solid rgba(59, 130, 246, 0.5)'
-									: isQuestion
-										? '1px solid rgba(250, 204, 21, 0.45)'
-										: '1px solid rgba(255,255,255,0.12)',
+								color: isMe ? '#ffffff' : '#f3f4f6', // Slightly softer white for AI text
+
+								// Premium Styling
 								background: isMe
-									? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+									? 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' // Indigo to Violet
 									: isCurriculum
-										? 'linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%)'
+										? 'linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8))' // Deep Slate
 										: isQuestion
-											? 'linear-gradient(135deg, #1f2937 0%, #111827 100%)'
-											: 'linear-gradient(135deg, #2d3748 0%, #1a202c 100%)',
+											? 'linear-gradient(145deg, rgba(31, 41, 55, 0.7), rgba(17, 24, 39, 0.8))' // Gray
+											: 'rgba(255, 255, 255, 0.04)', // Glassy default
+
+								border: isMe
+									? 'none'
+									: isCurriculum
+										? '1px solid rgba(59, 130, 246, 0.3)'
+										: isQuestion
+											? '1px solid rgba(234, 179, 8, 0.3)'
+											: '1px solid rgba(255, 255, 255, 0.08)',
+
+								boxShadow: isMe
+									? '0 4px 12px rgba(124, 58, 237, 0.25)' // Purple glow for user
+									: '0 2px 10px rgba(0, 0, 0, 0.1)', // Subtle shadow for AI
+
+								backdropFilter: isMe ? 'none' : 'blur(10px)',
 							}}
 						>
 							{isCurriculum ? (
-								<div style={{ fontSize: 12, opacity: 0.8, marginBottom: 6, color: '#60a5fa' }}>
-									📚 Course Curriculum
+								<div
+									style={{
+										display: 'flex',
+										alignItems: 'center',
+										gap: 6,
+										fontSize: 11,
+										textTransform: 'uppercase',
+										letterSpacing: '0.05em',
+										fontWeight: 600,
+										color: '#60a5fa',
+										marginBottom: 8,
+									}}
+								>
+									<span>📚</span> Course Curriculum
 								</div>
 							) : isQuestion ? (
-								<div style={{ fontSize: 12, opacity: 0.8, marginBottom: 6 }}>
-									Please answer this Question
+								<div
+									style={{
+										display: 'flex',
+										alignItems: 'center',
+										gap: 6,
+										fontSize: 11,
+										textTransform: 'uppercase',
+										letterSpacing: '0.05em',
+										fontWeight: 600,
+										color: '#facc15',
+										marginBottom: 8,
+									}}
+								>
+									<span>❓</span> Question
 								</div>
 							) : null}
 
-							{m.text}
+							<div style={{ position: 'relative', zIndex: 1 }}>{m.text}</div>
 
 							{isCurriculum && (
 								<button
 									onClick={onViewCourseDetails}
 									style={{
-										marginTop: 12,
+										marginTop: 14,
 										width: '100%',
 										padding: '10px 16px',
-										borderRadius: 10,
+										borderRadius: 12,
 										border: 'none',
-										background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+										// Vibrant gradient button
+										background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+										boxShadow:
+											'0 4px 6px -1px rgba(59, 130, 246, 0.4), 0 2px 4px -1px rgba(59, 130, 246, 0.2)',
 										color: '#fff',
-										fontSize: 14,
+										fontSize: 13,
 										fontWeight: 600,
 										cursor: 'pointer',
-										transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+										display: 'flex',
+										alignItems: 'center',
+										justifyContent: 'center',
+										gap: 6,
+										transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
 									}}
 									onMouseEnter={(e) => {
 										e.currentTarget.style.transform = 'translateY(-1px)'
-										e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.4)'
+										e.currentTarget.style.boxShadow = '0 6px 12px rgba(59, 130, 246, 0.5)'
+										e.currentTarget.style.filter = 'brightness(1.05)'
 									}}
 									onMouseLeave={(e) => {
 										e.currentTarget.style.transform = 'translateY(0)'
-										e.currentTarget.style.boxShadow = 'none'
+										e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(59, 130, 246, 0.4)'
+										e.currentTarget.style.filter = 'brightness(1)'
 									}}
 								>
 									View Course Details →
@@ -795,6 +978,9 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 	}, [auth, navigate])
 
 	const handleViewCourseDetails = useCallback(() => {
+		// Stop the LiveKit/agent session
+		setLkConnect(false)
+		// Open course details page in new tab
 		window.open('/course-detail-info', '_blank')
 	}, [])
 
@@ -818,6 +1004,8 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 		})
 	}, [])
 
+	const viewportContext = useViewportContext()
+
 	const handleStartLiveKit = useCallback(async () => {
 		if (lkConnect) {
 			setLkConnect(false)
@@ -828,17 +1016,31 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 		setLkLoading(true)
 		console.log('Starting LiveKit session')
 
-		// Use different prompts based on authentication status
+		// Use different prompts based on authentication status and viewport
 		const isLoggedIn = auth.isSignedIn
+		const { isMobile, isCanvasVisible, deviceType } = viewportContext
+
+		// Add mobile context to the prompt so the AI knows user can't see canvas
+		const mobileContextNote = isMobile
+			? ' Note: The user is on a mobile device and cannot see the canvas/whiteboard. Focus on verbal explanations and avoid references to visual elements on the canvas.'
+			: ''
+
 		const prompt = isLoggedIn
-			? "start teaching me the below content, cover the complete content and don't divert much"
-			: 'I want to talk you about the course and how can you help me in learning?'
+			? `start teaching me the below content, cover the complete content and don't divert much${mobileContextNote}`
+			: `I want to talk you about the course and how can you help me in learning?${mobileContextNote}`
 
 		try {
 			const response = await fetch('http://localhost:3001/start-learning', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ prompt }),
+				body: JSON.stringify({
+					prompt,
+					viewportContext: {
+						isMobile,
+						isCanvasVisible,
+						deviceType,
+					},
+				}),
 			})
 
 			const data: any = await response.json()
@@ -855,14 +1057,14 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 			}
 
 			setLkToken(tokenToUse)
-			setLkUrl('wss://project-1234-6tcs93tg.livekit.cloud')
+			setLkUrl('wss://adweew-jcas7wmr.livekit.cloud')
 			setLkConnect(true)
 		} catch {
 			setError('Failed to start learning session')
 		} finally {
 			setLkLoading(false)
 		}
-	}, [lkConnect, auth.isSignedIn])
+	}, [lkConnect, auth.isSignedIn, viewportContext])
 
 	// Show loading state if agent is not available yet
 	if (!agent) {
@@ -872,15 +1074,38 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 				style={{
 					display: 'flex',
 					flexDirection: 'column',
-					gap: 12,
-					padding: 12,
+					gap: 16,
+					padding: 20,
 					height: '100%',
 					minHeight: 0,
 					alignItems: 'center',
 					justifyContent: 'center',
 				}}
 			>
-				<div style={{ fontSize: 14, opacity: 0.6 }}>Initializing teacher...</div>
+				<div style={{ position: 'relative', width: 60, height: 60 }}>
+					<div
+						style={{
+							position: 'absolute',
+							inset: 0,
+							borderRadius: '50%',
+							border: '2px solid rgba(99, 102, 241, 0.2)',
+						}}
+					/>
+					<div
+						style={{
+							position: 'absolute',
+							inset: 0,
+							borderRadius: '50%',
+							border: '2px solid transparent',
+							borderTopColor: '#6366f1',
+							animation: 'spin 1s linear infinite',
+						}}
+					/>
+					<style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+				</div>
+				<div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.02em' }}>
+					Initializing Teacher...
+				</div>
 			</div>
 		)
 	}
@@ -891,8 +1116,8 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 			style={{
 				display: 'flex',
 				flexDirection: 'column',
-				gap: 12,
-				padding: 12,
+				gap: 16,
+				padding: '20px 24px',
 				height: '100%',
 				minHeight: 0,
 			}}
@@ -900,29 +1125,73 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 			<div
 				style={{
 					display: 'flex',
-					gap: 10,
+					gap: 12,
 					alignItems: 'center',
-					flexWrap: 'wrap',
+					justifyContent: 'space-between',
+					paddingBottom: 16,
+					borderBottom: '1px solid rgba(255,255,255,0.06)',
+					marginBottom: 4,
 				}}
 			>
 				<button
 					onClick={handleStartLiveKit}
 					disabled={lkLoading}
-					style={{ padding: '8px 10px', borderRadius: 10 }}
+					style={{
+						padding: '10px 16px',
+						borderRadius: 12,
+						background: lkConnect
+							? 'rgba(239, 68, 68, 0.15)' // Subtle Red for Stop
+							: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', // Premium Gradient
+						color: lkConnect ? '#fca5a5' : '#ffffff',
+						border: lkConnect ? '1px solid rgba(239, 68, 68, 0.3)' : 'none',
+						fontSize: 14,
+						fontWeight: 600,
+						cursor: 'pointer',
+						flex: 1, // Take available space
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						boxShadow: lkConnect ? 'none' : '0 4px 14px rgba(124, 58, 237, 0.4)', // Glow
+						transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+					}}
+					onMouseEnter={(e) => {
+						if (!e.currentTarget.disabled) {
+							e.currentTarget.style.transform = 'translateY(-1px)'
+							e.currentTarget.style.filter = 'brightness(1.1)'
+						}
+					}}
+					onMouseLeave={(e) => {
+						e.currentTarget.style.transform = 'translateY(0)'
+						e.currentTarget.style.filter = 'brightness(1)'
+					}}
 				>
-					{lkConnect ? 'Stop Learning' : lkLoading ? 'Starting…' : 'Start Learning'}
+					{lkConnect ? 'Stop Session' : lkLoading ? 'Connecting...' : 'Start Learning'}
 				</button>
 
 				{auth.isSignedIn ? (
 					<button
 						onClick={handleLogout}
 						style={{
-							padding: '8px 10px',
-							borderRadius: 10,
-							background: '#ef4444',
-							color: 'white',
-							border: 'none',
+							padding: '10px 14px',
+							borderRadius: 12,
+							background: 'transparent',
+							color: 'rgba(255, 255, 255, 0.7)',
+							border: '1px solid rgba(255, 255, 255, 0.15)',
 							cursor: 'pointer',
+							fontSize: 13,
+							fontWeight: 500,
+							transition: 'all 0.2s ease',
+						}}
+						title="Sign Out"
+						onMouseEnter={(e) => {
+							e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
+							e.currentTarget.style.color = '#fff'
+							e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
+						}}
+						onMouseLeave={(e) => {
+							e.currentTarget.style.background = 'transparent'
+							e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)'
+							e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)'
 						}}
 					>
 						Logout
@@ -931,12 +1200,27 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 					<SignInButton mode="modal">
 						<button
 							style={{
-								padding: '8px 10px',
-								borderRadius: 10,
-								background: '#3b82f6',
-								color: 'white',
-								border: 'none',
+								padding: '10px 16px',
+								borderRadius: 12,
+								background: 'transparent', // No grey background
+								color: '#fff',
+								border: '1px solid rgba(255, 255, 255, 0.2)',
 								cursor: 'pointer',
+								fontSize: 14,
+								fontWeight: 600,
+								backdropFilter: 'blur(10px)',
+								transition: 'all 0.2s ease',
+								boxShadow: '0 0 0 0 rgba(255,255,255,0)',
+							}}
+							onMouseEnter={(e) => {
+								e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
+								e.currentTarget.style.borderColor = '#fff'
+								e.currentTarget.style.boxShadow = '0 0 15px rgba(255, 255, 255, 0.1)'
+							}}
+							onMouseLeave={(e) => {
+								e.currentTarget.style.background = 'transparent'
+								e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'
+								e.currentTarget.style.boxShadow = '0 0 0 0 rgba(255,255,255,0)'
 							}}
 						>
 							Login
@@ -944,7 +1228,11 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 					</SignInButton>
 				)}
 
-				{error ? <span style={{ color: 'salmon', fontSize: 12 }}>{error}</span> : null}
+				{error ? (
+					<span style={{ color: '#f87171', fontSize: 12, position: 'absolute', bottom: -20 }}>
+						{error}
+					</span>
+				) : null}
 			</div>
 
 			{lkToken && lkUrl ? (
@@ -952,7 +1240,7 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 					style={{
 						display: 'flex',
 						flexDirection: 'column',
-						gap: 10,
+						gap: 16,
 						flex: 1,
 						minHeight: 0,
 					}}
@@ -989,12 +1277,12 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 									flex: '0 0 auto',
 									display: 'flex',
 									flexDirection: 'column',
-									gap: 10,
+									gap: 16,
 								}}
 							>
 								<RoomAudioRenderer />
 								<StartAudio label="Enable audio" />
-								<ConnectionStatus />
+								{/* ConnectionStatus removed from here, integrated into visual design elsewhere or just kept minimal if needed */}
 								<MicPushToTalk hotkey="Space" />
 							</div>
 
