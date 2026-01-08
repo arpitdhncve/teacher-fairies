@@ -132,6 +132,13 @@ export function convertUsageAndMetadataToTokens(
 			tokenUsage.uncachedInputTokens = inputTokens - cachedInputTokens
 			tokenUsage.cacheWriteInputTokens = null // we're doing implicit caching so openai doesn't give us this
 			break
+		case 'openrouter':
+			// OpenRouter proxies various models; treat like OpenAI for usage tracking
+			tokenUsage.outputTokens = outputTokens
+			tokenUsage.cacheReadInputTokens = cachedInputTokens
+			tokenUsage.uncachedInputTokens = inputTokens - cachedInputTokens
+			tokenUsage.cacheWriteInputTokens = null
+			break
 	}
 	return tokenUsage
 }
