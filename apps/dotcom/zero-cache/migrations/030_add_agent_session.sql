@@ -1,4 +1,4 @@
-CREATE TABLE agent_session (
+CREATE TABLE IF NOT EXISTS agent_session (
     "sessionID" TEXT PRIMARY KEY,
     "userID" TEXT NOT NULL,
     "started_on" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -6,4 +6,4 @@ CREATE TABLE agent_session (
     "session_history" JSONB
 );
 
-CREATE INDEX idx_agent_session_user ON agent_session("userID");
+CREATE INDEX IF NOT EXISTS idx_agent_session_user ON agent_session("userID");

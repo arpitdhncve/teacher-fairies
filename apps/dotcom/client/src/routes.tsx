@@ -3,6 +3,7 @@ import { TLRemoteSyncError, TLSyncErrorCloseEventReason } from '@tldraw/sync-cor
 import { Suspense, lazy, useEffect } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { Outlet, Route, createRoutesFromElements, redirect, useRouteError } from 'react-router-dom'
+import { uniqueId } from 'tldraw'
 import { ErrorPage } from './components/ErrorPage/ErrorPage'
 import { notFound } from './pages/not-found'
 import { ROUTES, routes } from './routeDefs'
@@ -62,10 +63,10 @@ export const router = createRoutesFromElements(
 		}}
 	>
 		<Route lazy={() => import('./tla/providers/TlaRootProviders')}>
-			{/* Redirect root to the default fairy file */}
+			{/* Create unique file for each anonymous user */}
 			<Route
 				path={ROUTES.tlaRoot}
-				loader={() => redirect('/f/5wE5y2SCWHUekvlcTut6h?d=v409.0.1103.832.page')}
+				lazy={() => import('./pages/anonymous-file')}
 			/>
 			<Route path={ROUTES.pricing} lazy={() => import('./pages/pricing')} />
 			<Route path={ROUTES.courseDetailInfo} lazy={() => import('./pages/course-detail-info')} />

@@ -41,6 +41,7 @@ import { getRoomSnapshot } from './routes/getRoomSnapshot'
 import { joinExistingRoom } from './routes/joinExistingRoom'
 import { submitFeedback } from './routes/submitFeedback'
 import { acceptInvite } from './routes/tla/acceptInvite'
+import { createAnonymousFile } from './routes/tla/createAnonymousFile'
 import { createFiles } from './routes/tla/createFiles'
 import { forwardRoomRequest } from './routes/tla/forwardRoomRequest'
 import { getInviteInfo } from './routes/tla/getInviteInfo'
@@ -116,6 +117,7 @@ const router = createRouter<Environment>()
 		const stub = getUserDurableObject(env, auth.userId)
 		return stub.fetch(req)
 	})
+	.post('/app/anonymous/create-file', createAnonymousFile) // Anonymous file creation - no auth required
 	.post('/app/tldr', createFiles)
 	.get('/app/replicator-status', async (_, env) => {
 		await getReplicator(env).ping()

@@ -38,7 +38,10 @@ export function TlaSidebarLayout({
 						height: '100%',
 						display: 'flex',
 						flexDirection: 'column',
-						background: 'rgba(0,0,0,0.2)',
+						// Premium Midnight Glass - No Shadow (Matching Desktop)
+						background: 'linear-gradient(180deg, rgba(5, 5, 8, 0.85) 0%, rgba(10, 10, 20, 0.9) 100%)',
+						backdropFilter: 'blur(24px) saturate(180%)',
+						WebkitBackdropFilter: 'blur(24px) saturate(180%)',
 					}}
 				>
 					<ChatPanel agent={agent} />

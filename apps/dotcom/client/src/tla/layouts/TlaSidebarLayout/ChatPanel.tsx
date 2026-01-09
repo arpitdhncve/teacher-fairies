@@ -1,7 +1,8 @@
 import { SignInButton, useAuth } from '@clerk/clerk-react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getFromLocalStorage, setInLocalStorage, uniqueId } from 'tldraw'
+import { uniqueId } from 'tldraw'
+import { getAnonymousUserId } from '../../../utils/anonymousUserId'
 // ✅ swap TldrawAgent -> FairyAgent
 import { FairyAgent } from '../../../fairy/fairy-agent/FairyAgent'
 import { useMaybeApp } from '../../hooks/useAppState'
@@ -1034,15 +1035,7 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 
 		// Get userID: use app userId or auth userId for logged-in users,
 		// otherwise get or create a persistent anonymous ID from localStorage
-		let userID = app?.userId ?? auth.userId
-		if (!userID) {
-			const ANON_USER_KEY = 'tldraw_anonymous_user_id'
-			userID = getFromLocalStorage(ANON_USER_KEY)
-			if (!userID) {
-				userID = `anon-${uniqueId()}`
-				setInLocalStorage(ANON_USER_KEY, userID)
-			}
-		}
+		const userID = app?.userId ?? auth.userId ?? getAnonymousUserId()
 
 		try {
 			const response = await fetch('http://localhost:3001/start-learning', {
