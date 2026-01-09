@@ -1059,6 +1059,10 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 				return
 			}
 
+			if (data.sessionId) {
+				localStorage.setItem('agent_session_id', data.sessionId)
+			}
+
 			const tokenToUse = data.livekit?.token
 			if (!tokenToUse) {
 				setError('Token missing in API response')

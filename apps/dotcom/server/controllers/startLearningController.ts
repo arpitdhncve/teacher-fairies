@@ -8,6 +8,7 @@ import {
   createLivekitAccessToken,
   createRoomWithMetadata,
 } from "../utils/livekitUtils";
+import { createAgentSession } from "../services/agentSessionService";
 
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -136,6 +137,12 @@ export const startLearning = async (
     // Create room and token
     await createRoomWithMetadata(roomName, metadata);
     const token = await createLivekitAccessToken(roomName, "2", "arpit");
+
+    // Create session record in DB
+    await createAgentSession({ 
+      sessionId, 
+      userId: metadata.userID 
+    });
 
     return res.json({
       status: "success",
