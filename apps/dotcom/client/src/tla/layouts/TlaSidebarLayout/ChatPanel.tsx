@@ -1,8 +1,10 @@
 import { SignInButton, useAuth } from '@clerk/clerk-react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getFromLocalStorage, setInLocalStorage, uniqueId } from 'tldraw'
 // ✅ swap TldrawAgent -> FairyAgent
 import { FairyAgent } from '../../../fairy/fairy-agent/FairyAgent'
+import { useMaybeApp } from '../../hooks/useAppState'
 import { useViewportContext } from '../../hooks/useViewportContext'
 import { clearLocalSessionState } from '../../utils/local-session-state'
 
@@ -956,6 +958,7 @@ function DataHandler({
 
 export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 	const auth = useAuth()
+	const app = useMaybeApp()
 	const navigate = useNavigate()
 	const [lkConnect, setLkConnect] = useState(false)
 	const [lkToken, setLkToken] = useState<string | undefined>()
@@ -1029,12 +1032,25 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 			? `start teaching me the below content, cover the complete content and don't divert much${mobileContextNote}`
 			: `I want to talk you about the course and how can you help me in learning?${mobileContextNote}`
 
+		// Get userID: use app userId or auth userId for logged-in users,
+		// otherwise get or create a persistent anonymous ID from localStorage
+		let userID = app?.userId ?? auth.userId
+		if (!userID) {
+			const ANON_USER_KEY = 'tldraw_anonymous_user_id'
+			userID = getFromLocalStorage(ANON_USER_KEY)
+			if (!userID) {
+				userID = `anon-${uniqueId()}`
+				setInLocalStorage(ANON_USER_KEY, userID)
+			}
+		}
+
 		try {
 			const response = await fetch('http://localhost:3001/start-learning', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					prompt,
+					userID,
 					viewportContext: {
 						isMobile,
 						isCanvasVisible,
