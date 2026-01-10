@@ -93,6 +93,16 @@ export class DirectToStartTaskActionUtil extends AgentActionUtil<DirectToStartTa
 		otherFairyInput.bounds = { x: task.x, y: task.y, w: task.w, h: task.h }
 		otherFairy.position.moveTo(Box.From(otherFairyInput.bounds).center)
 
+		// Move the leader fairy to the bottom-right of the task bounds
+		// This positions the leader near where the follower is drawing
+		const taskBox = Box.From(otherFairyInput.bounds)
+		const leaderOffset = 80 // Offset from the corner to avoid overlapping with the task area
+		const leaderPosition = {
+			x: taskBox.maxX + leaderOffset,
+			y: taskBox.maxY + leaderOffset,
+		}
+		this.agent.position.moveTo(leaderPosition)
+
 		otherFairy.interrupt({
 			mode: 'working-drone',
 			input: otherFairyInput,

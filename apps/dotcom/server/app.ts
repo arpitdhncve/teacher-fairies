@@ -4,6 +4,7 @@ import bodyParser from "body-parser";
 import startLearningRoutes from "./routes/startLearningRoutes";
 import resumeLearningRoutes from "./routes/resumeLearningRoutes";
 import snapshotCanvasRoutes from "./routes/snapshotCanvasRoutes";
+import taskLogsRoutes from "./routes/taskLogsRoutes";
 
 const app = express();
 
@@ -16,5 +17,7 @@ app.use(bodyParser.urlencoded({ limit: "50mb", extended: true })); // ⬅️ Add
 app.use("/", startLearningRoutes);
 app.use("/", resumeLearningRoutes);
 app.use("/", snapshotCanvasRoutes);
+app.use("/", taskLogsRoutes);
 
 export default app;
+

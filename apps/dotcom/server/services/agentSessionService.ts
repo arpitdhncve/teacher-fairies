@@ -6,8 +6,9 @@ interface SessionParams {
   userId: string;
 }
 
-interface UpdateSessionParams extends SessionParams {
-  sessionHistory: any[];
+interface UpdateSessionParams {
+  sessionId: string;
+  sessionHistory: any;
 }
 
 export const createAgentSession = async ({ sessionId, userId }: SessionParams) => {
@@ -24,19 +25,19 @@ export const createAgentSession = async ({ sessionId, userId }: SessionParams) =
   }
 };
 
-export const updateAgentSession = async ({ sessionId, userId, sessionHistory }: UpdateSessionParams) => {
+export const updateAgentSession = async ({ sessionId, sessionHistory }: UpdateSessionParams) => {
   try {
     const result = await pool.query(
       `UPDATE agent_session 
        SET "session_history" = $1, "ended_on" = NOW()
-       WHERE "sessionID" = $2 AND "userID" = $3`,
-      [JSON.stringify(sessionHistory), sessionId, userId]
+       WHERE "sessionID" = $2`,
+      [JSON.stringify(sessionHistory), sessionId]
     );
     
     if (result.rowCount === 0) {
-      console.warn(`[agentSessionService] Session ${sessionId} for user ${userId} not found or not updated`);
+      console.warn(`[agentSessionService] Session ${sessionId} not found or not updated`);
     } else {
-      console.log(`[agentSessionService] Updated session ${sessionId} for user ${userId}`);
+      console.log(`[agentSessionService] Updated session ${sessionId}`);
     }
   } catch (error) {
     console.error("[agentSessionService] Error updating session:", error);

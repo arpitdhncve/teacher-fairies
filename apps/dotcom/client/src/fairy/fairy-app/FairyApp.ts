@@ -7,6 +7,7 @@ import { FairyAppFollowingManager } from './managers/FairyAppFollowingManager'
 import { FairyAppPersistenceManager } from './managers/FairyAppPersistenceManager'
 import { FairyAppProjectsManager } from './managers/FairyAppProjectsManager'
 import { FairyAppTaskListManager } from './managers/FairyAppTaskListManager'
+import { FairyTaskLoggingManager } from './managers/FairyTaskLoggingManager'
 import { FairyAppWaitManager } from './managers/FairyAppWaitManager'
 
 /**
@@ -54,6 +55,11 @@ export class FairyApp {
 	 */
 	actionRateTracker: FairyAppActionRateTracker
 
+	/**
+	 * Manager for logging fairy task execution (drone tasks only).
+	 */
+	taskLogging: FairyTaskLoggingManager
+
 	// --- Global fairy state ---
 
 	/**
@@ -90,6 +96,7 @@ export class FairyApp {
 		this.tasks = new FairyAppTaskListManager(this)
 		this.waits = new FairyAppWaitManager(this)
 		this.actionRateTracker = new FairyAppActionRateTracker(this)
+		this.taskLogging = new FairyTaskLoggingManager(this)
 
 		editor.on('crash', () => this.dispose())
 		editor.on('dispose', () => this.dispose())

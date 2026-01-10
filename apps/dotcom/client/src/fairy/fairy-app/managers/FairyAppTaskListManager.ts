@@ -101,14 +101,25 @@ export class FairyAppTaskListManager extends BaseFairyAppManager {
 
 	/**
 	 * Set a task's status and notify waiting agents if completed.
+	 * Also triggers task logging for drone agents.
 	 */
 	setTaskStatusAndNotify(id: TaskId, status: FairyTaskStatus) {
+		const task = this.getTaskById(id)
+		
+		// Start task log when task begins (only for drone tasks)
+		if (status === 'in-progress' && task) {
+			this.fairyApp.taskLogging.startTaskLog(task)
+		}
+		
 		this.setTaskStatus(id, status)
-		// Notify waiting agents if task is done
+		
+		// Notify waiting agents and complete task log when done
 		if (status === 'done') {
-			const task = this.getTaskById(id)
-			if (task) {
-				this.fairyApp.waits.notifyTaskCompleted(task)
+			const updatedTask = this.getTaskById(id)
+			if (updatedTask) {
+				this.fairyApp.waits.notifyTaskCompleted(updatedTask)
+				// Complete task log (only for drone tasks - checked inside)
+				this.fairyApp.taskLogging.completeTaskLog(updatedTask)
 			}
 		}
 	}
