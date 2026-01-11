@@ -28,6 +28,12 @@ BEGIN
                    WHERE table_name = 'fairy_task_logs' AND column_name = 'agentId') THEN
         ALTER TABLE fairy_task_logs ADD COLUMN "agentId" TEXT;
     END IF;
+    
+    -- Add modelUsed column
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'fairy_task_logs' AND column_name = 'modelUsed') THEN
+        ALTER TABLE fairy_task_logs ADD COLUMN "modelUsed" TEXT;
+    END IF;
 END $$;
 
 -- Create index on taskId if not exists

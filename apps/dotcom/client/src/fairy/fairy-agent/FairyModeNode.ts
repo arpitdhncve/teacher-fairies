@@ -295,7 +295,7 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 							agent.fairyApp.tasks.assignFairyToTask(taskId, partner.id, allAgents)
 							// Only first BATCH_SIZE tasks are in-progress, rest stay as todo
 							if (index < BATCH_SIZE) {
-								agent.fairyApp.tasks.setTaskStatus(taskId, 'in-progress')
+								agent.fairyApp.tasks.setTaskStatusAndNotify(taskId, 'in-progress')
 							}
 						})
 

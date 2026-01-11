@@ -986,6 +986,12 @@ export class FairyAgent {
 								incompleteDiff = null
 								// Track shapes created by this complete action for lint detection
 								agent.lints.trackShapesFromDiff(diff)
+								
+								// Record the action for task logging (for all active in-progress tasks)
+								const activeTaskIds = agent.fairyApp.taskLogging.getActiveTaskIds()
+								for (const taskId of activeTaskIds) {
+									agent.fairyApp.taskLogging.recordTaskAction(taskId, transformedAction)
+								}
 							} else {
 								incompleteDiff = diff
 							}

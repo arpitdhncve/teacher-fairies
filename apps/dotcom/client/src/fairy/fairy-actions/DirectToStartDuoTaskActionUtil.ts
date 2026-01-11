@@ -82,7 +82,7 @@ export class DirectToStartDuoTaskActionUtil extends AgentActionUtil<DirectToStar
 		}
 
 		this.agent.fairyApp.tasks.assignFairyToTask(taskId, otherFairyId, allAgents)
-		this.agent.fairyApp.tasks.setTaskStatus(taskId, 'in-progress')
+		this.agent.fairyApp.tasks.setTaskStatusAndNotify(taskId, 'in-progress')
 
 		const firstName = this.agent.getConfig().name?.split(' ')[0] ?? ''
 

@@ -3,6 +3,8 @@ import pool from '../utils/db';
 
 // Create or update a task log
 export const createTaskLog = async (req: Request, res: Response) => {
+  console.log('[TaskLogs] createTaskLog API called');
+  console.log('[TaskLogs] Request body:', JSON.stringify(req.body, null, 2));
   try {
     const {
       id,
@@ -16,13 +18,14 @@ export const createTaskLog = async (req: Request, res: Response) => {
       canvasScreenshotBefore,
       projectId,
       agentId,
+      modelUsed,
     } = req.body;
 
     const result = await pool.query(
       `INSERT INTO fairy_task_logs (
         "id", "sessionId", "taskId", "taskTitle", "taskDescription", "taskPrompt",
-        "status", "canvasStateBefore", "canvasScreenshotBefore", "projectId", "agentId", "createdAt"
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+        "status", "canvasStateBefore", "canvasScreenshotBefore", "projectId", "agentId", "modelUsed", "createdAt"
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
       RETURNING *`,
       [
         id,
@@ -36,6 +39,7 @@ export const createTaskLog = async (req: Request, res: Response) => {
         canvasScreenshotBefore || null,
         projectId || null,
         agentId || null,
+        modelUsed || null,
       ]
     );
 
@@ -49,6 +53,8 @@ export const createTaskLog = async (req: Request, res: Response) => {
 
 // Update task log with completion data
 export const updateTaskLog = async (req: Request, res: Response) => {
+  console.log('[TaskLogs] updateTaskLog API called, id:', req.params.id);
+  console.log('[TaskLogs] Request body:', JSON.stringify(req.body, null, 2));
   try {
     const { id } = req.params;
     const {

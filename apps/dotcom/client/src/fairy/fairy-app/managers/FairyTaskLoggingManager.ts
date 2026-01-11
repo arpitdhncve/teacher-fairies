@@ -1,4 +1,4 @@
-import { FairyTask, FocusedShape, convertTldrawShapeToFocusedShape } from '@tldraw/fairy-shared'
+import { AgentAction, FairyTask, FocusedShape, convertTldrawShapeToFocusedShape } from '@tldraw/fairy-shared'
 import { uniqueId } from 'tldraw'
 import { BaseFairyAppManager } from './BaseFairyAppManager'
 import { AgentHelpers } from '../../fairy-agent/AgentHelpers'
@@ -24,6 +24,11 @@ export class FairyTaskLoggingManager extends BaseFairyAppManager {
 	 * Map of task ID to pending log data (tasks that have started but not finished)
 	 */
 	private pendingLogs: Map<string, PendingTaskLog> = new Map()
+
+	/**
+	 * Map of task ID to LLM actions recorded during task execution
+	 */
+	private taskLlmActions: Map<string, AgentAction[]> = new Map()
 
 	/**
 	 * Get the current session ID from localStorage
@@ -149,6 +154,7 @@ export class FairyTaskLoggingManager extends BaseFairyAppManager {
 		const sessionId = this.getSessionId()
 		const { shapes, image } = await this.captureCanvasState()
 		const taskPrompt = this.buildTaskPrompt(task)
+		const modelUsed = this.fairyApp.getModelSelection()
 
 		const pendingLog: PendingTaskLog = {
 			id: logId,
@@ -179,6 +185,7 @@ export class FairyTaskLoggingManager extends BaseFairyAppManager {
 					canvasScreenshotBefore: image,
 					projectId: task.projectId,
 					agentId: task.assignedTo,
+					modelUsed,
 				}),
 			})
 
@@ -207,6 +214,12 @@ export class FairyTaskLoggingManager extends BaseFairyAppManager {
 		console.log('[TaskLogging] Completing task log for:', task.id)
 
 		const { shapes, image } = await this.captureCanvasState()
+		
+		// Get stored LLM actions for this task
+		const storedActions = this.taskLlmActions.get(task.id) || []
+		const outputToSave = llmOutput || (storedActions.length > 0 ? storedActions : null)
+		
+		console.log('[TaskLogging] Saving output with', storedActions.length, 'recorded actions')
 
 		// Update log on server
 		try {
@@ -218,7 +231,7 @@ export class FairyTaskLoggingManager extends BaseFairyAppManager {
 					canvasStateAfter: shapes,
 					canvasScreenshotAfter: image,
 					prompt: llmPrompt || null,
-					output: llmOutput || null,
+					output: outputToSave,
 				}),
 			})
 
@@ -229,8 +242,35 @@ export class FairyTaskLoggingManager extends BaseFairyAppManager {
 			console.error('[TaskLogging] Error updating task log:', error)
 		}
 
-		// Clean up pending log
+			// Clean up pending log and stored actions
 		this.pendingLogs.delete(task.id)
+		this.taskLlmActions.delete(task.id)
+	}
+
+	/**
+	 * Record an LLM action for a specific task.
+	 * Called as actions stream in during task execution.
+	 * 
+	 * @param taskId - The ID of the task the action belongs to
+	 * @param action - The complete LLM action to record
+	 */
+	recordTaskAction(taskId: string, action: AgentAction): void {
+		// Only record if there's a pending log for this task
+		if (!this.pendingLogs.has(taskId)) {
+			return
+		}
+
+		const actions = this.taskLlmActions.get(taskId) || []
+		actions.push(action)
+		this.taskLlmActions.set(taskId, actions)
+		console.log('[TaskLogging] Recorded action for task:', taskId, 'type:', action._type, 'total:', actions.length)
+	}
+
+	/**
+	 * Get the IDs of tasks that are currently being logged (have pending logs)
+	 */
+	getActiveTaskIds(): string[] {
+		return Array.from(this.pendingLogs.keys())
 	}
 
 	/**
@@ -238,5 +278,6 @@ export class FairyTaskLoggingManager extends BaseFairyAppManager {
 	 */
 	reset(): void {
 		this.pendingLogs.clear()
+		this.taskLlmActions.clear()
 	}
 }

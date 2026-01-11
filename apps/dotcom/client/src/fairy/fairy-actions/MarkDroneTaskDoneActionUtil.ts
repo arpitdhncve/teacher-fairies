@@ -144,7 +144,7 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 
 			// Mark them as in-progress
 			nextBatch.forEach((task) => {
-				this.agent.fairyApp.tasks.setTaskStatus(task.id, 'in-progress')
+				this.agent.fairyApp.tasks.setTaskStatusAndNotify(task.id, 'in-progress')
 			})
 
 			// Build task list for the message
