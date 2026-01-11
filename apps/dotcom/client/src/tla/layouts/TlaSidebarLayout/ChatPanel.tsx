@@ -1,4 +1,4 @@
-import { SignInButton, useAuth } from '@clerk/clerk-react'
+import { useAuth, useClerk } from '@clerk/clerk-react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { uniqueId } from 'tldraw'
@@ -8,6 +8,8 @@ import { FairyAgent } from '../../../fairy/fairy-agent/FairyAgent'
 import { useMaybeApp } from '../../hooks/useAppState'
 import { useViewportContext } from '../../hooks/useViewportContext'
 import { clearLocalSessionState } from '../../utils/local-session-state'
+import { TlaCtaButton } from '../../components/TlaCtaButton/TlaCtaButton'
+import { TlaIcon } from '../../components/TlaIcon/TlaIcon'
 
 import {
 	LiveKitRoom,
@@ -233,61 +235,26 @@ function MicPushToTalk({ hotkey = 'Space' }: { hotkey?: string }) {
 							width: 80, // Fixed width to prevent layout jump
 						}}
 					>
-						{micEnabled ? 'Standard' : 'Muted'}
+						{micEnabled ? 'Listening' : 'Idle'}
 					</div>
 				</div>
 
-				{/* Action Button */}
-				<button
-					onClick={() => setMic(!micEnabled)}
-					disabled={connection !== ConnectionState.Connected}
+				{/* Action Label */}
+				<div
 					style={{
-						padding: '8px 16px',
-						borderRadius: 10,
+						padding: '0 16px',
 						fontSize: 13,
-						fontWeight: 600,
-						border: 'none',
-						background: micEnabled
-							? 'rgba(255,255,255,0.1)'
-							: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-						color: '#ffffff',
-						cursor: 'pointer',
-						transition: 'all 0.2s ease',
-						boxShadow: micEnabled ? 'none' : '0 2px 6px rgba(59, 130, 246, 0.3)',
-					}}
-					onMouseEnter={(e) => {
-						if (!micEnabled && !e.currentTarget.disabled) {
-							e.currentTarget.style.filter = 'brightness(1.1)'
-						}
-					}}
-					onMouseLeave={(e) => {
-						e.currentTarget.style.filter = 'brightness(1)'
+						fontWeight: 500,
+						color: 'rgba(255,255,255,0.5)',
+						letterSpacing: '0.02em',
 					}}
 				>
-					{micEnabled ? 'Mute' : 'Unmute'}
-				</button>
+					Hold Space bar to speak
+				</div>
 			</div>
 
 			{/* Footnote */}
-			<div
-				style={{
-					fontSize: 11,
-					color: 'rgba(255,255,255,0.4)',
-					textAlign: 'center',
-					letterSpacing: '0.03em',
-				}}
-			>
-				Hold{' '}
-				<b
-					style={{
-						color: 'rgba(255,255,255,0.7)',
-						borderBottom: '1px dotted rgba(255,255,255,0.3)',
-					}}
-				>
-					{hotkey}
-				</b>{' '}
-				to speak temporarily
-			</div>
+
 		</div>
 	)
 }
@@ -296,7 +263,7 @@ type ChatMsg =
 	| { id: string; kind: 'user_transcript'; text: string; ts: number }
 	| { id: string; kind: 'ai_speak'; text: string; ts: number }
 	| { id: string; kind: 'ai_question'; text: string; ts: number }
-	| { id: string; kind: 'ai_curriculum'; text: string; ts: number }
+	| { id: string; kind: 'ai_course'; text: string; ts: number }
 
 function TranscriptionCollector({ onUser }: { onUser: (m: ChatMsg) => void }) {
 	const { localParticipant } = useLocalParticipant()
@@ -398,7 +365,7 @@ function UnifiedChat({
 			{items.map((m) => {
 				const isMe = m.kind === 'user_transcript'
 				const isQuestion = m.kind === 'ai_question'
-				const isCurriculum = m.kind === 'ai_curriculum'
+				const isCourse = m.kind === 'ai_course'
 
 				return (
 					<div
@@ -425,7 +392,7 @@ function UnifiedChat({
 								// Premium Styling
 								background: isMe
 									? 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' // Indigo to Violet
-									: isCurriculum
+									: isCourse
 										? 'linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8))' // Deep Slate
 										: isQuestion
 											? 'linear-gradient(145deg, rgba(31, 41, 55, 0.7), rgba(17, 24, 39, 0.8))' // Gray
@@ -433,7 +400,7 @@ function UnifiedChat({
 
 								border: isMe
 									? 'none'
-									: isCurriculum
+									: isCourse
 										? '1px solid rgba(59, 130, 246, 0.3)'
 										: isQuestion
 											? '1px solid rgba(234, 179, 8, 0.3)'
@@ -446,7 +413,7 @@ function UnifiedChat({
 								backdropFilter: isMe ? 'none' : 'blur(10px)',
 							}}
 						>
-							{isCurriculum ? (
+							{isCourse ? (
 								<div
 									style={{
 										display: 'flex',
@@ -460,7 +427,7 @@ function UnifiedChat({
 										marginBottom: 8,
 									}}
 								>
-									<span>📚</span> Course Curriculum
+									<span>📚</span> Course Details
 								</div>
 							) : isQuestion ? (
 								<div
@@ -482,7 +449,7 @@ function UnifiedChat({
 
 							<div style={{ position: 'relative', zIndex: 1 }}>{m.text}</div>
 
-							{isCurriculum && (
+							{isCourse && (
 								<button
 									onClick={onViewCourseDetails}
 									style={{
@@ -516,7 +483,7 @@ function UnifiedChat({
 										e.currentTarget.style.filter = 'brightness(1)'
 									}}
 								>
-									View Course Details →
+									Course Details
 								</button>
 							)}
 						</div>
@@ -867,14 +834,14 @@ function DataHandler({
 				return
 			}
 
-			// --- UI Curriculum Details ---
-			if (topic === 'ui.curriculum_details') {
+			// --- UI Course Details ---
+			if (topic === 'ui.course_details') {
 				const payloadText = new TextDecoder().decode(payload)
 				let decoded: any
 				try {
 					decoded = JSON.parse(payloadText)
 				} catch (e) {
-					console.error('Failed to parse ui.curriculum_details payload:', e)
+					console.error('Failed to parse ui.course_details payload:', e)
 					return
 				}
 
@@ -884,8 +851,8 @@ function DataHandler({
 				const ts = Date.parse(decoded?.ts ?? '') || Number(decoded?.timestamp ?? '') || Date.now()
 
 				onUi({
-					id: `ui.curriculum_details:${decoded?.ts ?? ts}:${text.slice(0, 16)}`,
-					kind: 'ai_curriculum',
+					id: `ui.course_details:${decoded?.ts ?? ts}:${text.slice(0, 16)}`,
+					kind: 'ai_course',
 					text,
 					ts,
 				})
@@ -959,6 +926,7 @@ function DataHandler({
 
 export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 	const auth = useAuth()
+	const { client } = useClerk()
 	const app = useMaybeApp()
 	const navigate = useNavigate()
 	const [lkConnect, setLkConnect] = useState(false)
@@ -1146,107 +1114,25 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 					marginBottom: 4,
 				}}
 			>
-				<button
-					onClick={handleStartLiveKit}
-					disabled={lkLoading}
-					style={{
-						padding: '10px 16px',
-						borderRadius: 12,
-						background: lkConnect
-							? 'rgba(239, 68, 68, 0.15)' // Subtle Red for Stop
-							: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', // Premium Gradient
-						color: lkConnect ? '#fca5a5' : '#ffffff',
-						border: lkConnect ? '1px solid rgba(239, 68, 68, 0.3)' : 'none',
-						fontSize: 14,
-						fontWeight: 600,
-						cursor: 'pointer',
-						flex: 1, // Take available space
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'center',
-						boxShadow: lkConnect ? 'none' : '0 4px 14px rgba(124, 58, 237, 0.4)', // Glow
-						transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+				<ChatControls 
+					lkConnect={lkConnect}
+					lkLoading={lkLoading}
+					onStart={handleStartLiveKit}
+					isSignedIn={!!auth.isSignedIn}
+					onSignOut={handleLogout}
+					onSignIn={() => {
+						client.signIn.authenticateWithRedirect({
+							strategy: 'oauth_google',
+							redirectUrl: '/sso-callback',
+							redirectUrlComplete: '/',
+						})
 					}}
-					onMouseEnter={(e) => {
-						if (!e.currentTarget.disabled) {
-							e.currentTarget.style.transform = 'translateY(-1px)'
-							e.currentTarget.style.filter = 'brightness(1.1)'
-						}
-					}}
-					onMouseLeave={(e) => {
-						e.currentTarget.style.transform = 'translateY(0)'
-						e.currentTarget.style.filter = 'brightness(1)'
-					}}
-				>
-					{lkConnect ? 'Stop Session' : lkLoading ? 'Connecting...' : 'Start Learning'}
-				</button>
-
-				{auth.isSignedIn ? (
-					<button
-						onClick={handleLogout}
-						style={{
-							padding: '10px 14px',
-							borderRadius: 12,
-							background: 'transparent',
-							color: 'rgba(255, 255, 255, 0.7)',
-							border: '1px solid rgba(255, 255, 255, 0.15)',
-							cursor: 'pointer',
-							fontSize: 13,
-							fontWeight: 500,
-							transition: 'all 0.2s ease',
-						}}
-						title="Sign Out"
-						onMouseEnter={(e) => {
-							e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
-							e.currentTarget.style.color = '#fff'
-							e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
-						}}
-						onMouseLeave={(e) => {
-							e.currentTarget.style.background = 'transparent'
-							e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)'
-							e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)'
-						}}
-					>
-						Logout
-					</button>
-				) : (
-					<SignInButton mode="modal">
-						<button
-							style={{
-								padding: '10px 16px',
-								borderRadius: 12,
-								background: 'transparent', // No grey background
-								color: '#fff',
-								border: '1px solid rgba(255, 255, 255, 0.2)',
-								cursor: 'pointer',
-								fontSize: 14,
-								fontWeight: 600,
-								backdropFilter: 'blur(10px)',
-								transition: 'all 0.2s ease',
-								boxShadow: '0 0 0 0 rgba(255,255,255,0)',
-							}}
-							onMouseEnter={(e) => {
-								e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
-								e.currentTarget.style.borderColor = '#fff'
-								e.currentTarget.style.boxShadow = '0 0 15px rgba(255, 255, 255, 0.1)'
-							}}
-							onMouseLeave={(e) => {
-								e.currentTarget.style.background = 'transparent'
-								e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'
-								e.currentTarget.style.boxShadow = '0 0 0 0 rgba(255,255,255,0)'
-							}}
-						>
-							Login
-						</button>
-					</SignInButton>
-				)}
-
-				{error ? (
-					<span style={{ color: '#f87171', fontSize: 12, position: 'absolute', bottom: -20 }}>
-						{error}
-					</span>
-				) : null}
+					error={error}
+				/>
 			</div>
+
+			{/* Chat Controls Components defined below or imported if separated */}
+
 
 			{lkToken && lkUrl ? (
 				<div
@@ -1321,5 +1207,260 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 				</div>
 			) : null}
 		</div>
+	)
+}
+
+interface ChatControlsProps {
+	lkConnect: boolean
+	lkLoading: boolean
+	onStart: () => void
+	isSignedIn: boolean
+	onSignOut: () => void
+	onSignIn: () => void
+	error: string | null
+}
+
+function ChatControls({
+	lkConnect,
+	lkLoading,
+	onStart,
+	isSignedIn,
+	onSignOut,
+	onSignIn,
+	error,
+}: ChatControlsProps) {
+	return (
+		<>
+			<StartLearningButton
+				connected={lkConnect}
+				loading={lkLoading}
+				onClick={onStart}
+				variant={isSignedIn ? 'text' : 'icon'}
+			/>
+			
+			<AuthButton 
+				signedIn={isSignedIn} 
+				onSignOut={onSignOut} 
+				onSignIn={onSignIn} 
+			/>
+
+			{error ? (
+				<span style={{ color: '#f87171', fontSize: 12, position: 'absolute', bottom: -20 }}>
+					{error}
+				</span>
+			) : null}
+		</>
+	)
+}
+
+function StartLearningButton({
+	connected,
+	loading,
+	onClick,
+	variant,
+}: {
+	connected: boolean
+	loading: boolean
+	onClick: () => void
+	variant: 'icon' | 'text'
+}) {
+	const isDisabled = loading
+	
+	// Icon-only variant (Play button) for non-logged in users
+	if (variant === 'icon') {
+		return (
+			<button
+				onClick={onClick}
+				disabled={isDisabled}
+				title="Start Learning"
+				style={{
+					width: 42,
+					height: 42,
+					borderRadius: 12,
+					background: connected
+						? 'rgba(239, 68, 68, 0.15)'
+						: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+					color: connected ? '#fca5a5' : '#ffffff',
+					border: connected ? '1px solid rgba(239, 68, 68, 0.3)' : 'none',
+					cursor: 'pointer',
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					boxShadow: connected ? 'none' : '0 4px 14px rgba(124, 58, 237, 0.4)',
+					transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+					flexShrink: 0,
+				}}
+				onMouseEnter={(e) => {
+					if (!e.currentTarget.disabled) {
+						e.currentTarget.style.transform = 'translateY(-1px)'
+						e.currentTarget.style.filter = 'brightness(1.1)'
+					}
+				}}
+				onMouseLeave={(e) => {
+					e.currentTarget.style.transform = 'translateY(0)'
+					e.currentTarget.style.filter = 'brightness(1)'
+				}}
+			>
+				{loading ? (
+					<div
+						style={{
+							width: 16,
+							height: 16,
+							borderRadius: '50%',
+							border: '2px solid rgba(255,255,255,0.3)',
+							borderTopColor: '#fff',
+							animation: 'spin 1s linear infinite',
+						}}
+					/>
+				) : connected ? (
+					<div 
+						style={{ 
+							width: 14, 
+							height: 14, 
+							background: 'currentColor', 
+							borderRadius: 2 
+						}} 
+					/> // Square for stop
+				) : (
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+						<path d="M8 5v14l11-7z" />
+					</svg> // Play icon
+				)}
+			</button>
+		)
+	}
+
+	// Text variant for logged-in users
+	return (
+		<button
+			onClick={onClick}
+			disabled={isDisabled}
+			style={{
+				padding: '10px 16px',
+				borderRadius: 12,
+				background: connected
+					? 'rgba(239, 68, 68, 0.15)'
+					: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+				color: connected ? '#fca5a5' : '#ffffff',
+				border: connected ? '1px solid rgba(239, 68, 68, 0.3)' : 'none',
+				fontSize: 14,
+				fontWeight: 600,
+				cursor: 'pointer',
+				flex: 1,
+				display: 'flex',
+				alignItems: 'center',
+				justifyContent: 'center',
+				boxShadow: connected ? 'none' : '0 4px 14px rgba(124, 58, 237, 0.4)',
+				transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+			}}
+			onMouseEnter={(e) => {
+				if (!e.currentTarget.disabled) {
+					e.currentTarget.style.transform = 'translateY(-1px)'
+					e.currentTarget.style.filter = 'brightness(1.1)'
+				}
+			}}
+			onMouseLeave={(e) => {
+				e.currentTarget.style.transform = 'translateY(0)'
+				e.currentTarget.style.filter = 'brightness(1)'
+			}}
+		>
+			{connected ? 'Stop Session' : loading ? 'Connecting...' : 'Start Learning'}
+		</button>
+	)
+}
+
+function AuthButton({
+	signedIn,
+	onSignOut,
+	onSignIn,
+}: {
+	signedIn: boolean
+	onSignOut: () => void
+	onSignIn: () => void
+}) {
+	if (signedIn) {
+		return (
+			<button
+				onClick={onSignOut}
+				style={{
+					padding: '10px 14px',
+					borderRadius: 12,
+					background: 'transparent',
+					color: 'rgba(255, 255, 255, 0.7)',
+					border: '1px solid rgba(255, 255, 255, 0.15)',
+					cursor: 'pointer',
+					fontSize: 13,
+					fontWeight: 500,
+					transition: 'all 0.2s ease',
+					flexShrink: 0,
+				}}
+				title="Sign Out"
+				onMouseEnter={(e) => {
+					e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
+					e.currentTarget.style.color = '#fff'
+					e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
+				}}
+				onMouseLeave={(e) => {
+					e.currentTarget.style.background = 'transparent'
+					e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)'
+					e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)'
+				}}
+			>
+				Logout
+			</button>
+		)
+	}
+
+	return (
+		<button
+			style={{
+				padding: '10px 16px',
+				borderRadius: 12,
+				background: '#ffffff', // White background for colorful icon
+				color: '#374151', // Dark Gray text
+				border: '1px solid rgba(0,0,0,0.08)',
+				cursor: 'pointer',
+				fontSize: 14,
+				fontWeight: 600,
+				boxShadow: '0 4px 14px rgba(0, 0, 0, 0.1)',
+				gap: 10,
+				flex: 1,
+				display: 'flex',
+				alignItems: 'center',
+				justifyContent: 'center',
+				transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+			}}
+			onClick={onSignIn}
+			onMouseEnter={(e) => {
+				e.currentTarget.style.transform = 'translateY(-1px)'
+				e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.15)'
+			}}
+			onMouseLeave={(e) => {
+				e.currentTarget.style.transform = 'translateY(0)'
+				e.currentTarget.style.boxShadow = '0 4px 14px rgba(0, 0, 0, 0.1)'
+			}}
+		>
+			<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+				<g fill="none" fillRule="evenodd">
+					<path
+						d="M20.64 12.2c0-.63-.06-1.25-.16-1.84H12v3.49h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.92c1.71-1.58 2.68-3.9 2.68-6.62z"
+						fill="#4285F4"
+					/>
+					<path
+						d="M12 21c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.81.54-1.85.86-3.05.86-2.34 0-4.32-1.58-5.03-3.71H3.85v2.33C5.33 18.97 8.48 21 12 21z"
+						fill="#34A853"
+					/>
+					<path
+						d="M6.97 13.71a5.17 5.17 0 0 1-.09-1.71c0-.59.1-1.18.28-1.71V7.96H3.85a9.2 9.2 0 0 0 0 8.08l3.12-2.33z"
+						fill="#FBBC05"
+					/>
+					<path
+						d="M12 5.38c1.32 0 2.5.45 3.44 1.35l2.58-2.59A9 9 0 0 0 3.85 7.96l3.12 2.33C7.68 7.94 9.66 6.36 12 5.38z"
+						fill="#EA4335"
+					/>
+				</g>
+			</svg>
+			Sign in with Google
+		</button>
 	)
 }

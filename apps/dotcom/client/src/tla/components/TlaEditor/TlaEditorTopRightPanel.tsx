@@ -15,6 +15,7 @@ import {
 	usePassThroughWheelEvents,
 	useTranslation,
 } from 'tldraw'
+import { useClerk } from '@clerk/clerk-react'
 import { routes } from '../../../routeDefs'
 import { useMaybeApp } from '../../hooks/useAppState'
 import { useCurrentFileId } from '../../hooks/useCurrentFileId'
@@ -43,6 +44,7 @@ export function TlaEditorTopRightPanel({
 	const fileId = useCurrentFileId()
 	const trackEvent = useTldrawAppUiEvents()
 	const { addDialog } = useDialogs()
+	const { client } = useClerk()
 
 	if (isAnonUser) {
 		return (
@@ -57,10 +59,21 @@ export function TlaEditorTopRightPanel({
 							source: 'anon-landing-page',
 							ctaMessage: ctaString,
 						})
-						addDialog({ component: TlaSignInDialog })
+						client.signIn.authenticateWithRedirect({
+							strategy: 'oauth_google',
+							redirectUrl: '/sso-callback',
+							redirectUrlComplete: '/',
+						})
+					}}
+					style={{
+						gap: 8,
+						background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+						border: 'none',
+						boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)',
 					}}
 				>
-					<F {...ctaMessages.signInToShare} />
+					<TlaIcon icon="google" />
+					<F defaultMessage="Try 1 hour free" />
 				</TlaCtaButton>
 			</div>
 		)

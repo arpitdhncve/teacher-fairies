@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useDialogs } from 'tldraw'
 import { TlaSignInDialog } from '../tla/components/dialogs/TlaSignInDialog'
+import { useClerk } from '@clerk/clerk-react'
 import {
 	MODULES,
 	getFaviconUrl,
@@ -29,6 +30,7 @@ export function Component() {
 	// Removed initial expanded state for premium "clean" look
 	const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set())
 	const { addDialog } = useDialogs()
+	const { client } = useClerk()
 
 	const toggleModule = (moduleId: number) => {
 		setExpandedModules((prev) => {
@@ -43,8 +45,10 @@ export function Component() {
 	}
 
 	const openLoginDialog = () => {
-		addDialog({
-			component: (props) => <TlaSignInDialog {...props} skipRedirect />,
+		client.signIn.authenticateWithRedirect({
+			strategy: 'oauth_google',
+			redirectUrl: '/sso-callback',
+			redirectUrlComplete: '/',
 		})
 	}
 
@@ -81,7 +85,7 @@ export function Component() {
 					{/* Right - CTA */}
 					<div className={headerStyles.ctaGroup}>
 						<div className={headerStyles.spotlightBadge} onClick={openLoginDialog}>
-							<span className={headerStyles.sparkleIcon}>✨</span>1 Hour Free
+							<GoogleIcon className={headerStyles.sparkleIcon} /> Enroll Now · 1 Hour Free
 						</div>
 					</div>
 				</div>
@@ -304,11 +308,13 @@ function ConceptCard({ concept }: { concept: Concept }) {
 // Pricing Section
 function PricingSection() {
 	const { addDialog } = useDialogs()
+	const { client } = useClerk()
 
 	const handleTryFree = () => {
-		// Open login dialog
-		addDialog({
-			component: (props) => <TlaSignInDialog {...props} skipRedirect />,
+		client.signIn.authenticateWithRedirect({
+			strategy: 'oauth_google',
+			redirectUrl: '/sso-callback',
+			redirectUrlComplete: '/',
 		})
 	}
 
@@ -324,7 +330,7 @@ function PricingSection() {
 			{/* Try Course CTA */}
 			<div className={pricingStyles.tryFreeSection}>
 				<button className={pricingStyles.tryFreeButton} onClick={handleTryFree}>
-					🎓 Try Course - 1 Hour Free
+					<GoogleIcon className={pricingStyles.googleIcon} /> Enroll Now · 1 Hour Free
 				</button>
 				<span className={pricingStyles.tryFreeNote}>No credit card required</span>
 			</div>
@@ -376,7 +382,7 @@ function PricingSection() {
 			</div>
 
 			{/* Value Props Below Cards */}
-			<div className={pricingStyles.valuePropsContainer}>
+			<div className={pricingProps}>
 				<div className={pricingStyles.valuePropBadge}>
 					<span className={pricingStyles.valuePropIcon}>💰</span>
 					<span>10x Cheaper than Human Engineer</span>
@@ -393,3 +399,37 @@ function PricingSection() {
 		</div>
 	)
 }
+
+function GoogleIcon({ className }: { className?: string }) {
+	return (
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			viewBox="0 0 24 24"
+			width="1em"
+			height="1em"
+			className={className}
+			style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}
+		>
+			<g fill="none" fillRule="evenodd">
+				<path
+					d="M20.64 12.2c0-.63-.06-1.25-.16-1.84H12v3.49h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.92c1.71-1.58 2.68-3.9 2.68-6.62z"
+					fill="#4285F4"
+				/>
+				<path
+					d="M12 21c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.81.54-1.85.86-3.05.86-2.34 0-4.32-1.58-5.03-3.71H3.85v2.33C5.33 18.97 8.48 21 12 21z"
+					fill="#34A853"
+				/>
+				<path
+					d="M6.97 13.71a5.17 5.17 0 0 1-.09-1.71c0-.59.1-1.18.28-1.71V7.96H3.85a9.2 9.2 0 0 0 0 8.08l3.12-2.33z"
+					fill="#FBBC05"
+				/>
+				<path
+					d="M12 5.38c1.32 0 2.5.45 3.44 1.35l2.58-2.59A9 9 0 0 0 3.85 7.96l3.12 2.33C7.68 7.94 9.66 6.36 12 5.38z"
+					fill="#EA4335"
+				/>
+			</g>
+		</svg>
+	)
+}
+
+const pricingProps = pricingStyles.valuePropsContainer
