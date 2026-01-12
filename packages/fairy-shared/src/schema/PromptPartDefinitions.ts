@@ -505,8 +505,12 @@ export const UserViewportBoundsPartDefinition: PromptPartDefinition<UserViewport
 		if (!userBounds) {
 			return []
 		}
-		const userViewCenter = Box.From(userBounds).center
-		return [`The user's view is centered at (${userViewCenter.x}, ${userViewCenter.y}).`]
+		const safeMinX = Math.round(userBounds.x + 10)
+		const safeMaxX = Math.round(userBounds.x + userBounds.w - 10)
+
+		return [
+			`User Viewport Constraints: You must strictly draw within these horizontal bounds: SafeMinX=${safeMinX}, SafeMaxX=${safeMaxX}. Do NOT draw anything outside these X coordinates.`,
+		]
 	},
 }
 
@@ -523,8 +527,12 @@ export const AgentViewportBoundsPartDefinition: PromptPartDefinition<AgentViewpo
 		if (!agentBounds) {
 			return []
 		}
+		const safeMinX = Math.round(agentBounds.x + 10)
+		const safeMaxX = Math.round(agentBounds.x + agentBounds.w - 10)
+
 		return [
 			`The bounds of the part of the canvas that you can currently see are: ${JSON.stringify(agentBounds)}`,
+			`Task Bounds Constraints: You must strictly draw within these horizontal bounds: SafeMinX=${safeMinX}, SafeMaxX=${safeMaxX}. Do NOT draw anything outside these X coordinates.`,
 		]
 	},
 }

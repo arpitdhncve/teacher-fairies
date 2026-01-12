@@ -118,7 +118,11 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 			this.agent.fairyApp.tasks.createTask({
 				id: reviewTaskId,
 				title: 'Self-Review: Check your work',
-				text: 'Perform a strict review of the work you just completed. Check for: 1. Overlaps (no shapes should overlap unintentionally), 2. Readability (text must be legible/contrast), 3. Alignment (consistent spacing/alignment), 4. Completeness (did you fulfill requirements?). If you find issues, fix them immediately.',
+				text: `Perform a strict review of the work you just completed. Check for: 1. Overlaps (no shapes should overlap unintentionally), 2. Readability (text must be legible/contrast), 3. Alignment (consistent spacing/alignment), 4. Completeness (did you fulfill requirements?), 5. BOUNDS CHECK: Ensure ALL drawn elements (including text and shapes) are strictly between X=${Math.round(
+					reviewTaskBounds.x + 10
+				)} and X=${Math.round(
+					reviewTaskBounds.x + reviewTaskBounds.w - 10
+				)}. NOTHING must exist outside these X coordinates. If you find issues, fix them immediately.`,
 				projectId: project.id,
 				assignedTo: this.agent.id,
 				status: 'todo',

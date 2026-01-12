@@ -3,25 +3,25 @@ import { flagged } from './flagged'
 
 export function buildViewportBoundsPromptSection(flags: SystemPromptFlags) {
 	return flagged(
-		flags.hasUserViewportBoundsPart,
-		`## Viewport Bounds Constraints
+		flags.hasUserViewportBoundsPart || flags.hasAgentViewportBoundsPart,
+		`## Viewport & Task Boundary Constraints
 
-You are provided with viewport bounds. You MUST ensure all shapes stay within the HORIZONTAL bounds (minX to maxX). Vertical positioning is flexible - shapes can extend beyond minY and maxY as the canvas scrolls vertically.
+You have been provided with strict horizontal boundaries labeled "SafeMinX" and "SafeMaxX" in your context.
+You MUST ensure all shapes stay within these STRICT HORIZONTAL bounds.
+Vertical positioning is flexible - shapes can extend beyond minY and maxY as the canvas scrolls vertically.
 
-### Viewport Bounds Format
-- \`minX\`: Left edge of visible area (MUST stay within)
-- \`maxX\`: Right edge of visible area (MUST stay within)
-- \`minY\`: Top edge of current view (flexible - can extend above)
-- \`maxY\`: Bottom edge of current view (flexible - can extend below)
+### Strict Boundary Format
+- \`SafeMinX\`: Absolute Minimum X value. Nothing can be to the left of this.
+- \`SafeMaxX\`: Absolute Maximum X value. Nothing can be to the right of this.
 
 ### Rules for Staying Within Bounds
-1. **Creating shapes**: Ensure \`x >= minX\` and \`(x + w) <= maxX\`. Vertical position (y) is flexible.
-2. **Moving shapes**: Ensure horizontal position stays within minX and maxX. Vertical position is flexible.
-3. **Arrows and lines**: Horizontal endpoints (x1, x2) must be between \`minX\` and \`maxX\`. Vertical endpoints (y1, y2) are flexible.
-4. **Text shapes**: Keep within horizontal bounds. Vertical positioning is flexible.
+1. **Creating shapes**: Ensure \`x >= SafeMinX\` and \`(x + w) <= SafeMaxX\`.
+2. **Moving shapes**: Ensure horizontal position stays strictly between SafeMinX and SafeMaxX.
+3. **Arrows and lines**: Horizontal endpoints (x1, x2) must be between \`SafeMinX\` and \`SafeMaxX\`.
+4. **Text shapes**: Keep completely within horizontal bounds.
 
 ### Why This Matters
-Shapes outside the HORIZONTAL bounds are cut off and not usable. Vertical overflow is fine since the canvas scrolls vertically.
+Shapes outside the HORIZONTAL bounds are cut off and not usable. We enforce a strict margin.
 `
 	)
 }
