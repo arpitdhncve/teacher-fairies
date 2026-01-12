@@ -347,18 +347,13 @@ function PricingSection() {
 						<li className={pricingStyles.featureItem}>
 							<span className={pricingStyles.checkIcon}>✓</span> 5 hours of AI tutoring
 						</li>
-						<li className={pricingStyles.featureItem}>
-							<span className={pricingStyles.checkIcon}>✓</span> Full course access
-						</li>
-						<li className={pricingStyles.featureItem}>
-							<span className={pricingStyles.checkIcon}>✓</span> All case studies
-						</li>
+
 					</ul>
 					<button className={pricingStyles.button}>Purchase</button>
 				</div>
 
 				{/* 20 Hours Pack with 10% discount */}
-				<div className={pricingStyles.card}>
+				<div className={`${pricingStyles.card} ${pricingStyles.cardHighlight}`}>
 					<div className={pricingStyles.discountBadge}>10% OFF</div>
 					<h3 className={pricingStyles.cardTitle}>Pro Pack</h3>
 					<div className={pricingStyles.price}>
@@ -370,14 +365,9 @@ function PricingSection() {
 						<li className={pricingStyles.featureItem}>
 							<span className={pricingStyles.checkIcon}>✓</span> 20 hours of AI tutoring
 						</li>
-						<li className={pricingStyles.featureItem}>
-							<span className={pricingStyles.checkIcon}>✓</span> All case studies
-						</li>
-						<li className={pricingStyles.featureItem}>
-							<span className={pricingStyles.checkIcon}>✓</span> Priority support
-						</li>
+
 					</ul>
-					<button className={pricingStyles.button}>Purchase</button>
+					<button className={`${pricingStyles.button} ${pricingStyles.buttonPrimary}`}>Purchase</button>
 				</div>
 			</div>
 

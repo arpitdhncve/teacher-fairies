@@ -416,6 +416,16 @@ export class AgentService {
 				(model as any).modelId || modelName
 			)
 
+			// Log agent role based on prompt content
+			const isLeader = 'currentProjectOrchestrator' in prompt
+			const isFollower = 'currentProjectDrone' in prompt
+
+			if (isLeader) {
+				console.error('LEADER_AGENT')
+			} else if (isFollower) {
+				console.error('FOLLOWER_AGENT')
+			}
+
 			if (typeof model === 'string') {
 				throw new Error('Model is a string, not a LanguageModel')
 			}

@@ -249,7 +249,31 @@ function MicPushToTalk({ hotkey = 'Space' }: { hotkey?: string }) {
 						letterSpacing: '0.02em',
 					}}
 				>
-					Hold Space bar to speak
+					Hold{' '}
+					<span style={{ position: 'relative', color: '#fff', fontWeight: 600 }}>
+						Spacebar
+						<svg
+							viewBox="0 0 70 8"
+							fill="none"
+							xmlns="http://www.w3.org/2000/svg"
+							style={{
+								position: 'absolute',
+								bottom: -6,
+								left: -2,
+								width: 'calc(100% + 4px)',
+								height: 8,
+							}}
+						>
+							<path
+								d="M2 2C15 6 55 6 68 2"
+								stroke="#a78bfa" // A nice soft purple/violet to match the theme
+								strokeWidth="2"
+								strokeLinecap="round"
+								style={{ vectorEffect: 'non-scaling-stroke' }}
+							/>
+						</svg>
+					</span>{' '}
+					to speak
 				</div>
 			</div>
 
@@ -339,6 +363,25 @@ function UnifiedChat({
 		if (!stickToBottom) return
 		bottomRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
 	}, [items, stickToBottom])
+
+
+	const { localParticipant } = useLocalParticipant()
+
+	const handleClickCourseDetails = useCallback(() => {
+		// Send navigation signal to agent
+		if (localParticipant) {
+			const payload = {
+				destination: '/course-detail-info',
+				ts: Date.now(),
+			}
+			localParticipant.publishData(new TextEncoder().encode(JSON.stringify(payload)), {
+				topic: 'user_navigation',
+			})
+		}
+
+		// Call parent handler
+		onViewCourseDetails()
+	}, [localParticipant, onViewCourseDetails])
 
 	if (items.length === 0) return null
 
@@ -451,7 +494,7 @@ function UnifiedChat({
 
 							{isCourse && (
 								<button
-									onClick={onViewCourseDetails}
+									onClick={handleClickCourseDetails}
 									style={{
 										marginTop: 14,
 										width: '100%',
@@ -950,8 +993,6 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 	}, [auth, navigate])
 
 	const handleViewCourseDetails = useCallback(() => {
-		// Stop the LiveKit/agent session
-		setLkConnect(false)
 		// Open course details page in new tab
 		window.open('/course-detail-info', '_blank')
 	}, [])
@@ -1012,6 +1053,7 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 				body: JSON.stringify({
 					prompt,
 					userID,
+					concept_id: isLoggedIn ? undefined : 'course_info_001',
 					viewportContext: {
 						isMobile,
 						isCanvasVisible,

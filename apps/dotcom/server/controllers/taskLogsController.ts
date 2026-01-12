@@ -3,8 +3,6 @@ import pool from '../utils/db';
 
 // Create or update a task log
 export const createTaskLog = async (req: Request, res: Response) => {
-  console.log('[TaskLogs] createTaskLog API called');
-  console.log('[TaskLogs] Request body:', JSON.stringify(req.body, null, 2));
   try {
     const {
       id,
@@ -43,7 +41,6 @@ export const createTaskLog = async (req: Request, res: Response) => {
       ]
     );
 
-    console.log('[TaskLogs] Created task log:', id);
     res.status(201).json({ status: 'success', data: result.rows[0] });
   } catch (error) {
     console.error('[TaskLogs] Error creating task log:', error);
@@ -53,8 +50,6 @@ export const createTaskLog = async (req: Request, res: Response) => {
 
 // Update task log with completion data
 export const updateTaskLog = async (req: Request, res: Response) => {
-  console.log('[TaskLogs] updateTaskLog API called, id:', req.params.id);
-  console.log('[TaskLogs] Request body:', JSON.stringify(req.body, null, 2));
   try {
     const { id } = req.params;
     const {
@@ -89,7 +84,6 @@ export const updateTaskLog = async (req: Request, res: Response) => {
       return res.status(404).json({ status: 'error', message: 'Task log not found' });
     }
 
-    console.log('[TaskLogs] Updated task log:', id);
     res.json({ status: 'success', data: result.rows[0] });
   } catch (error) {
     console.error('[TaskLogs] Error updating task log:', error);

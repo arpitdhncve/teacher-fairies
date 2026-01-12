@@ -127,20 +127,21 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  border: 1px solid #e2e8f0;
+  background: white;
+  border: 1px solid rgba(0,0,0,0.08); /* Softer border */
   padding: 14px 24px;
   border-radius: 100px;
   font-size: 15px;
   font-weight: 600;
   color: var(--c-text-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); /* Softer shadow */
   transition: all 0.2s ease;
 }
 
 .valuePropBadge:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  border-color: rgba(0,0,0,0.12);
 }
 
 .valuePropIcon {
@@ -201,8 +202,13 @@
 }
 
 .card:hover {
-  transform: translateY(-8px);
-  box-shadow: var(--s-lg);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.1);
+}
+
+.cardHighlight {
+  border-color: var(--c-text-primary);
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
 }
 
 /* Free Trial Spotlight Card */
@@ -344,6 +350,18 @@
 .button:hover {
   background: var(--c-text-primary);
   color: white;
+}
+
+.buttonPrimary {
+  background: var(--c-text-primary);
+  color: white;
+  border-color: var(--c-text-primary);
+}
+
+.buttonPrimary:hover {
+  background: black; /* slightly darker or black */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .buttonSpotlight {

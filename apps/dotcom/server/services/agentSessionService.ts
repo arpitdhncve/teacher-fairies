@@ -4,6 +4,7 @@ import pool from "../utils/db";
 interface SessionParams {
   sessionId: string;
   userId: string;
+  conceptId?: string;
 }
 
 interface UpdateSessionParams {
@@ -11,12 +12,12 @@ interface UpdateSessionParams {
   sessionHistory: any;
 }
 
-export const createAgentSession = async ({ sessionId, userId }: SessionParams) => {
+export const createAgentSession = async ({ sessionId, userId, conceptId }: SessionParams) => {
   try {
     await pool.query(
-      `INSERT INTO agent_session ("sessionID", "userID", "started_on", "session_history")
-       VALUES ($1, $2, NOW(), $3)`,
-      [sessionId, userId, JSON.stringify([])]
+      `INSERT INTO agent_session ("sessionID", "userID", "started_on", "session_history", "concept_id")
+       VALUES ($1, $2, NOW(), $3, $4)`,
+      [sessionId, userId, JSON.stringify([]), conceptId]
     );
     console.log(`[agentSessionService] Created session ${sessionId} for user ${userId}`);
   } catch (error) {
@@ -44,3 +45,40 @@ export const updateAgentSession = async ({ sessionId, sessionHistory }: UpdateSe
     throw error;
   }
 };
+
+export const getAgentSession = async (sessionId: string) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM agent_session WHERE "sessionID" = $1`,
+      [sessionId]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    return result.rows[0];
+  } catch (error) {
+    console.error("[agentSessionService] Error fetching session:", error);
+    throw error;
+  }
+
+};
+
+export const getLatestAgentSessions = async (userId: string, conceptId: string, limit: number = 2) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM agent_session 
+       WHERE "userID" = $1 AND "concept_id" = $2
+       ORDER BY "started_on" DESC 
+       LIMIT $3`,
+      [userId, conceptId, limit]
+    );
+
+    return result.rows;
+  } catch (error) {
+    console.error("[agentSessionService] Error fetching latest sessions:", error);
+    throw error;
+  }
+};
+
