@@ -99,10 +99,14 @@ export class EndCurrentProjectActionUtil extends AgentActionUtil<EndCurrentProje
 		}
 
 		// Select orchestrator after project deletion
+		// Only update agents whose selection state is actually changing to prevent cascading re-renders
 		const allAgents = this.agent.fairyApp.agents.getAgents()
 		allAgents.forEach((agent) => {
 			const shouldSelect = agent.id === this.agent.id
-			agent.updateEntity((f) => (f ? { ...f, isSelected: shouldSelect } : f))
+			const currentlySelected = agent.getEntity()?.isSelected ?? false
+			if (currentlySelected !== shouldSelect) {
+				agent.updateEntity((f) => (f ? { ...f, isSelected: shouldSelect } : f))
+			}
 		})
 	}
 }

@@ -30,7 +30,7 @@ export class EndDuoProjectActionUtil extends AgentActionUtil<EndDuoProjectAction
 			return
 		}
 
-		// Directly proceed to ending the project (review phase removed)
+
 
 		const membersIds = project.members.map((member) => member.id)
 		const memberAgents = this.agent.fairyApp.agents
@@ -103,7 +103,9 @@ export class EndDuoProjectActionUtil extends AgentActionUtil<EndDuoProjectAction
 		}
 		droneAgent.interrupt({ mode: 'idling', input: null })
 
-		// If feed dialog is open, soft delete instead of hard delete
+
+	
+
 		if (this.agent.fairyApp.getIsFeedDialogOpen()) {
 			this.agent.fairyApp.projects.softDeleteProjectAndAssociatedTasks(project.id)
 		} else {
@@ -111,10 +113,14 @@ export class EndDuoProjectActionUtil extends AgentActionUtil<EndDuoProjectAction
 		}
 
 		// Select self after project deletion
+		// Only update agents whose selection state is actually changing to prevent cascading re-renders
 		const allAgents = this.agent.fairyApp.agents.getAgents()
 		allAgents.forEach((agent) => {
 			const shouldSelect = agent.id === this.agent.id
-			agent.updateEntity((f) => (f ? { ...f, isSelected: shouldSelect } : f))
+			const currentlySelected = agent.getEntity()?.isSelected ?? false
+			if (currentlySelected !== shouldSelect) {
+				agent.updateEntity((f) => (f ? { ...f, isSelected: shouldSelect } : f))
+			}
 		})
 	}
 }

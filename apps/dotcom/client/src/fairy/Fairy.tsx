@@ -337,11 +337,19 @@ export function Fairy({ agent }: { agent: FairyAgent }) {
 		() => agent.getRole() === 'orchestrator' || agent.getRole() === 'duo-orchestrator',
 		[agent]
 	)
+	const role = useValue('fairy role', () => agent.getRole(), [agent])
 	const projectColor = useValue('project color', () => agent.getProject()?.color, [agent])
 
 	const projectHexColor = projectColor
 		? getProjectColor(projectColor)
 		: 'var(--tl-color-fairy-light)'
+
+	let wingColor = projectHexColor
+	if (role === 'orchestrator' || role === 'duo-orchestrator') {
+		wingColor = '#FF4D4D' // Red for leader
+	} else if (role === 'drone') {
+		wingColor = '#4DFF4D' // Green for follower
+	}
 
 	const flipX = useValue('fairy flipX', () => agent.getEntity()?.flipX ?? false, [agent])
 	const isSelected = useValue('fairy isSelected', () => agent.getEntity()?.isSelected ?? false, [
@@ -417,7 +425,7 @@ export function Fairy({ agent }: { agent: FairyAgent }) {
 						isGenerating={isGenerating}
 						flipX={flipX}
 						isOrchestrator={isOrchestrator}
-						projectColor={projectHexColor}
+						projectColor={wingColor}
 						legLength={legLength}
 					/>
 				</div>

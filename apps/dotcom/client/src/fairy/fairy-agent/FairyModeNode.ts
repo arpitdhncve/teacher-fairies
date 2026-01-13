@@ -347,6 +347,26 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 						partnerAgent.interrupt({ mode: 'working-drone', input: partnerInput })
 
 						// Enter waiting mode to wait for the partner to complete ALL tasks
+						
+						// Move the leader to the bottom of the current batch
+						// This ensures the leader's context shows the latest work area for this batch
+						if (undistributedTasks.length > 0) {
+							// Find the task with the bottom-most position in this batch
+							const bottomMostTask = undistributedTasks.reduce((bottom, task) => {
+								const taskBottom = task.y + task.h
+								const currentBottom = bottom.y + bottom.h
+								return taskBottom > currentBottom ? task : bottom
+							})
+							
+							// Position leader at the bottom-middle of the bottom-most task in the batch
+							const supervisorPos = {
+								x: bottomMostTask.x + bottomMostTask.w / 2,
+								y: bottomMostTask.y + bottomMostTask.h
+							}
+							
+							agent.position.moveTo(supervisorPos)
+						}
+
 						agent.mode.setMode('duo-orchestrating-waiting')
 					}
 					return

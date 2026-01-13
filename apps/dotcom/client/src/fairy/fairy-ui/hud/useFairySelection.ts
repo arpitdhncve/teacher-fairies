@@ -108,16 +108,24 @@ export function useFairySelection(agents: FairyAgent[]) {
 
 			if (isInProject) {
 				// Select all fairies in the project, deselect others
+				// Only update agents whose state is actually changing to prevent cascading re-renders
 				const memberIds = new Set(project.members.map((member) => member.id))
 				agents.forEach((agent) => {
 					const shouldSelect = memberIds.has(agent.id)
-					agent.updateEntity((f) => (f ? { ...f, isSelected: shouldSelect } : f))
+					const currentlySelected = agent.getEntity()?.isSelected ?? false
+					if (currentlySelected !== shouldSelect) {
+						agent.updateEntity((f) => (f ? { ...f, isSelected: shouldSelect } : f))
+					}
 				})
 			} else {
 				// Select just this fairy, deselect others
+				// Only update agents whose state is actually changing to prevent cascading re-renders
 				agents.forEach((agent) => {
 					const shouldSelect = agent.id === selectedAgent.id
-					agent.updateEntity((f) => (f ? { ...f, isSelected: shouldSelect } : f))
+					const currentlySelected = agent.getEntity()?.isSelected ?? false
+					if (currentlySelected !== shouldSelect) {
+						agent.updateEntity((f) => (f ? { ...f, isSelected: shouldSelect } : f))
+					}
 				})
 			}
 		},
@@ -132,14 +140,18 @@ export function useFairySelection(agents: FairyAgent[]) {
 
 			if (isInProject) {
 				// Deselect all fairies in the project
+				// Only update agents that are currently selected
 				const memberIds = new Set(project.members.map((member) => member.id))
 				agents.forEach((a) => {
-					if (memberIds.has(a.id)) {
+					if (memberIds.has(a.id) && a.getEntity()?.isSelected) {
 						a.updateEntity((f) => (f ? { ...f, isSelected: false } : f))
 					}
 				})
 			} else {
-				agent.updateEntity((f) => (f ? { ...f, isSelected: false } : f))
+				// Only update if currently selected
+				if (agent.getEntity()?.isSelected) {
+					agent.updateEntity((f) => (f ? { ...f, isSelected: false } : f))
+				}
 			}
 		},
 		[agents]

@@ -176,11 +176,15 @@ Make sure to give the approximate locations of the work to be done, if relevant,
 				fairyApp.projects.addProject(newProject)
 
 				// Select all fairies in the newly created project
+				// Only update agents whose state is actually changing to prevent cascading re-renders
 				const allAgents = fairyApp.agents.getAgents()
 				const projectMemberIds = new Set(newProject.members.map((member) => member.id))
 				allAgents.forEach((agent) => {
 					const shouldSelect = projectMemberIds.has(agent.id)
-					agent.updateEntity((f) => (f ? { ...f, isSelected: shouldSelect } : f))
+					const currentlySelected = agent.getEntity()?.isSelected ?? false
+					if (currentlySelected !== shouldSelect) {
+						agent.updateEntity((f) => (f ? { ...f, isSelected: shouldSelect } : f))
+					}
 				})
 			}
 

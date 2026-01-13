@@ -389,6 +389,7 @@ function UnifiedChat({
 		<div
 			ref={scrollRef}
 			onScroll={onScroll}
+			className="unified-chat-scroll-container"
 			style={{
 				marginTop: 16,
 				width: '100%',
@@ -400,11 +401,14 @@ function UnifiedChat({
 				gap: 16,
 				paddingRight: 8,
 				paddingLeft: 4,
-				// Custom scrollbar styling via CSS would be ideal, but inline for now:
-				scrollbarWidth: 'thin',
-				scrollbarColor: 'rgba(255,255,255,0.1) transparent',
+				scrollbarWidth: 'none',
 			}}
 		>
+			<style>{`
+				.unified-chat-scroll-container::-webkit-scrollbar {
+					display: none;
+				}
+			`}</style>
 			{items.map((m) => {
 				const isMe = m.kind === 'user_transcript'
 				const isQuestion = m.kind === 'ai_question'
@@ -1080,7 +1084,7 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 			}
 
 			setLkToken(tokenToUse)
-			setLkUrl('wss://adweew-jcas7wmr.livekit.cloud')
+			setLkUrl('wss://project-123-tjsvjjwb.livekit.cloud')
 			setLkConnect(true)
 		} catch {
 			setError('Failed to start learning session')

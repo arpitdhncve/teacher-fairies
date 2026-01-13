@@ -64,11 +64,15 @@ export class AbortProjectActionUtil extends AgentActionUtil<AbortProjectAction> 
 		this.agent.fairyApp.projects.deleteProjectAndAssociatedTasks(project.id)
 
 		// Select orchestrator after deleting project
+		// Only update agents whose selection state is actually changing to prevent cascading re-renders
 		if (orchestratorAgent) {
 			const allAgents = this.agent.fairyApp.agents.getAgents()
 			allAgents.forEach((agent) => {
 				const shouldSelect = agent.id === orchestratorAgent.id
-				agent.updateEntity((f) => (f ? { ...f, isSelected: shouldSelect } : f))
+				const currentlySelected = agent.getEntity()?.isSelected ?? false
+				if (currentlySelected !== shouldSelect) {
+					agent.updateEntity((f) => (f ? { ...f, isSelected: shouldSelect } : f))
+				}
 			})
 		}
 	}

@@ -1172,9 +1172,13 @@ export class FairyAgent {
 		this.fairyApp.projects.addProject(newProject)
 
 		// Select both fairies in the project
+		// Only update agents whose selection state is actually changing to prevent cascading re-renders
 		allAgents.forEach((agent) => {
 			const shouldSelect = newProject.members.some((member) => member.id === agent.id)
-			agent.updateEntity((f) => (f ? { ...f, isSelected: shouldSelect } : f))
+			const currentlySelected = agent.getEntity()?.isSelected ?? false
+			if (currentlySelected !== shouldSelect) {
+				agent.updateEntity((f) => (f ? { ...f, isSelected: shouldSelect } : f))
+			}
 		})
 
 		// Set leader as duo-orchestrator
