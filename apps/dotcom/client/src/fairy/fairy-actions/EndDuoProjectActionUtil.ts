@@ -2,6 +2,7 @@ import { EndDuoProjectAction, Streaming, createAgentActionInfo } from '@tldraw/f
 import { uniqueId } from 'tldraw'
 import { AgentHelpers } from '../fairy-agent/AgentHelpers'
 import { FairyAgent } from '../fairy-agent/FairyAgent'
+import { ReviewStrategyExecutor } from '../fairy-review/ReviewStrategyExecutor'
 import { AgentActionUtil } from './AgentActionUtil'
 
 export class EndDuoProjectActionUtil extends AgentActionUtil<EndDuoProjectAction> {
@@ -38,6 +39,15 @@ export class EndDuoProjectActionUtil extends AgentActionUtil<EndDuoProjectAction
 			.filter((agent: FairyAgent) => membersIds.includes(agent.id))
 
 		const droneAgent = memberAgents.find((agent: FairyAgent) => agent.getRole() === 'drone')
+
+		// Check if we need to perform a review before ending the project
+		if (droneAgent) {
+			const executor = new ReviewStrategyExecutor()
+			if (executor.shouldReviewBeforeEnd(project, this.agent, droneAgent)) {
+				executor.executeReview(project, this.agent, droneAgent)
+				return
+			}
+		}
 
 		if (!droneAgent) {
 			// If feed dialog is open, soft delete instead of hard delete

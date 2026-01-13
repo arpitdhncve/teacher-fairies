@@ -7,6 +7,7 @@ import {
 import { uniqueId } from 'tldraw'
 import { AgentHelpers } from '../fairy-agent/AgentHelpers'
 import { AgentActionUtil } from './AgentActionUtil'
+import { ReviewStrategyExecutor } from '../fairy-review/ReviewStrategyExecutor'
 
 export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDoneAction> {
 	static override type = 'mark-my-task-done' as const
@@ -55,6 +56,46 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 			this.agent.fairyApp.tasks.setTaskStatusAndNotify(task.id, 'done')
 		})
 
+		const project = this.agent.getProject()
+		const wasCleanupTask = inProgressTasks.some(ReviewStrategyExecutor.isCleanupTask)
+		
+		if (project && wasCleanupTask) {
+			const executor = new ReviewStrategyExecutor()
+			// Find leader (duo-orchestrator)
+			const leaderMember = project.members.find((m) => m.role === 'duo-orchestrator')
+			if (leaderMember) {
+				const leaderAgent = this.agent.fairyApp.agents
+					.getAgents()
+					.find((a) => a.id === leaderMember.id)
+				if (leaderAgent) {
+					// Mark review as complete
+					executor.onReviewComplete(project, leaderAgent, this.agent)
+					
+					// Check if there are remaining TODO tasks for this follower
+					const allMyTasks = this.agent.fairyApp.tasks
+						.getTasksByProjectId(project.id)
+						.filter((task) => task.assignedTo === this.agent.id)
+					const remainingTodoTasks = allMyTasks.filter((task) => task.status === 'todo')
+					
+					if (remainingTodoTasks.length === 0) {
+						// No more TODO tasks - wake the leader to assess and continue
+						console.log('[MarkTaskDone] Cleanup complete, no TODO tasks remaining - waking leader')
+						this.agent.interrupt({ mode: 'standing-by', input: null })
+						
+						if (leaderAgent.mode.getMode() === 'duo-orchestrating-waiting') {
+							leaderAgent.schedule({
+								agentMessages: [
+									`Your partner has completed the batch review/cleanup. All assigned tasks are done. Review if more work is needed, create next batch of tasks, or call end-duo-project if the project is complete.`,
+								],
+							})
+						}
+						return // Exit early - don't continue with normal flow
+					}
+					// If there are remaining TODO tasks, continue to the normal flow below
+				}
+			}
+		}
+
 		// Build completion message listing all completed tasks
 		const taskSummary =
 			inProgressTasks.length === 1
@@ -81,22 +122,39 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 			}
 		)
 
-		const project = this.agent.getProject()
-		if (!project) {
+		const proj = this.agent.getProject()
+		if (!proj) {
 			this.agent.interrupt({ mode: 'standing-by', input: null })
 			return
 		}
 
 		// Check for remaining TODO tasks and pick next batch
 		const allMyTasks = this.agent.fairyApp.tasks
-			.getTasksByProjectId(project.id)
+			.getTasksByProjectId(proj.id)
 			.filter((task) => task.assignedTo === this.agent.id)
 		const remainingTodoTasks = allMyTasks.filter((task) => task.status === 'todo')
 
 		const BATCH_SIZE = FairyBatchConfig.FOLLOWER_BATCH_SIZE
 
-		if (remainingTodoTasks.length > 0) {
+		// Check if we should do a batch review AFTER completing this batch
+		// This check happens BEFORE checking for remaining tasks, so review triggers
+		// even when there are no more TODO tasks (e.g., leader created 2, follower completed 2)
+		const executor = new ReviewStrategyExecutor()
+		const leaderMember = proj.members.find((m) => m.role === 'duo-orchestrator')
+		if (leaderMember) {
+			const leaderAgent = this.agent.fairyApp.agents
+				.getAgents()
+				.find((a) => a.id === leaderMember.id)
+			if (leaderAgent && executor.shouldReviewAfterBatch(proj, leaderAgent, this.agent)) {
+				// Trigger batch review before picking next batch or waking leader
+				console.log('[MarkTaskDone] Triggering batch review after completing batch')
+				executor.executeReview(proj, leaderAgent, this.agent)
+				return
+			}
+		}
 
+		// No batch review needed, check for remaining tasks
+		if (remainingTodoTasks.length > 0) {
 			// Pick next batch of tasks
 			const nextBatch = remainingTodoTasks.slice(0, BATCH_SIZE)
 
@@ -128,14 +186,12 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 		// No more tasks - go to standing-by and wake leader
 		this.agent.interrupt({ mode: 'standing-by', input: null })
 
-
-		// Wake up the leader (duo-orchestrating-waiting)
-		const leaderMember = project.members.find((m) => m.role === 'duo-orchestrator')
+		// Wake up the leader (duo-orchestrating-waiting) - reuse leaderMember from above
 		if (leaderMember) {
-			const leaderAgent = this.agent.fairyApp.agents
+			const leaderAgentForWakeup = this.agent.fairyApp.agents
 				.getAgents()
 				.find((a) => a.id === leaderMember.id)
-			if (leaderAgent && leaderAgent.mode.getMode() === 'duo-orchestrating-waiting') {
+			if (leaderAgentForWakeup && leaderAgentForWakeup.mode.getMode() === 'duo-orchestrating-waiting') {
 				const completionMessage =
 					inProgressTasks.length === 1
 						? `Task "${inProgressTasks[0].title}" has been completed by your partner.`
@@ -156,10 +212,10 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 						x: bottomMostTask.x,
 						y: bottomMostTask.y + bottomMostTask.h,
 					}
-					leaderAgent.position.moveTo(workArea)
+					leaderAgentForWakeup.position.moveTo(workArea)
 				}
 
-				leaderAgent.schedule({
+				leaderAgentForWakeup.schedule({
 					agentMessages: [completionMessage],
 				})
 			}

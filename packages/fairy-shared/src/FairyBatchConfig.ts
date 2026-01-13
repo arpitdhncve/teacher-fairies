@@ -12,7 +12,7 @@ export const FairyBatchConfig = {
 	LEADER_BATCH_SIZE: 2,
 
 	/** Number of tasks the follower picks up after completing a batch */
-	FOLLOWER_BATCH_SIZE: 1,
+	FOLLOWER_BATCH_SIZE: 2,
 } as const
 
 export type FairyBatchConfigType = typeof FairyBatchConfig

@@ -23,6 +23,9 @@ export interface FairyProject {
 	currentPlanIndex?: number // Index of next task to create from plannedTasks
 	planningComplete?: boolean // Flag to indicate all tasks are planned and ready for distribution
 	originalPrompt?: string // Store the original draw.request for use in reviews
+	cleanupCompleted?: boolean
+	pendingBatchReview?: boolean // Flag to track if a batch review is pending
+	lastBatchReviewedAt?: number // Timestamp of when the last batch review was completed
 }
 
 export interface FairyProjectMember {
