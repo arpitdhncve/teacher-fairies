@@ -408,3 +408,43 @@
     gap: 24px;
   }
 }
+
+.timeLeftContainer {
+	background: rgba(255, 255, 255, 0.8);
+	backdrop-filter: blur(10px);
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	border-radius: 20px;
+	padding: 24px 40px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+	margin-bottom: 32px;
+	min-width: 300px;
+}
+
+.timeLeftLabel {
+	font-size: 16px;
+	color: #666;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	font-weight: 500;
+	margin-bottom: 8px;
+}
+
+.timeLeftValue {
+	font-size: 48px;
+	font-weight: 800;
+	background: linear-gradient(135deg, #2563eb 0%, #d946ef 100%);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	line-height: 1.1;
+	margin-bottom: 8px;
+}
+
+.timeLeftSubtext {
+	font-size: 16px;
+	color: #888;
+	font-weight: 400;
+}

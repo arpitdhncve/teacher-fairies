@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useDialogs } from 'tldraw'
 import { TlaSignInDialog } from '../tla/components/dialogs/TlaSignInDialog'
-import { useClerk } from '@clerk/clerk-react'
+import { useClerk, useUser } from '@clerk/clerk-react'
 import {
 	MODULES,
 	getFaviconUrl,
@@ -22,15 +22,27 @@ import './styles/course-variables.module.css' // Load variables
 // We keep the old styles for basic page layout until we fully migrate global layout if needed
 // reusing page layout from old module or creating a minimal new one inline if simple
 import oldStyles from './course-detail-info.module.css'
+import { TimeLeft } from '../components/TimeLeft'
 
 type TabType = 'curriculum' | 'pricing'
 
 export function Component() {
-	const [activeTab, setActiveTab] = useState<TabType>('curriculum')
+	const [searchParams] = useSearchParams()
+	const initialTab = (searchParams.get('tab') as TabType) || 'curriculum'
+	const [activeTab, setActiveTab] = useState<TabType>(initialTab)
+
+	useEffect(() => {
+		const tabParam = searchParams.get('tab') as TabType
+		if (tabParam && (tabParam === 'curriculum' || tabParam === 'pricing')) {
+			setActiveTab(tabParam)
+		}
+	}, [searchParams])
+
 	// Removed initial expanded state for premium "clean" look
 	const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set())
 	const { addDialog } = useDialogs()
-	const { client } = useClerk()
+	const { client, signOut } = useClerk()
+	const { user, isSignedIn } = useUser()
 
 	const toggleModule = (moduleId: number) => {
 		setExpandedModules((prev) => {
@@ -48,7 +60,7 @@ export function Component() {
 		client.signIn.authenticateWithRedirect({
 			strategy: 'oauth_google',
 			redirectUrl: '/sso-callback',
-			redirectUrlComplete: '/',
+			redirectUrlComplete: '/course-detail-info?tab=curriculum',
 		})
 	}
 
@@ -84,9 +96,35 @@ export function Component() {
 
 					{/* Right - CTA */}
 					<div className={headerStyles.ctaGroup}>
-						<div className={headerStyles.spotlightBadge} onClick={openLoginDialog}>
-							<GoogleIcon className={headerStyles.sparkleIcon} /> Enroll Now · 1 Hour Free
-						</div>
+						{isSignedIn && user ? (
+							<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+								<img
+									src={user.imageUrl}
+									alt={user.fullName || 'User'}
+									style={{ width: '32px', height: '32px', borderRadius: '50%' }}
+								/>
+								<div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
+									<span style={{ fontSize: '14px', fontWeight: 500 }}>
+										{user.firstName || user.fullName}
+									</span>
+									<span
+										onClick={() => signOut()}
+										style={{
+											fontSize: '12px',
+											color: '#666',
+											cursor: 'pointer',
+											textDecoration: 'underline',
+										}}
+									>
+										Logout
+									</span>
+								</div>
+							</div>
+						) : (
+							<div className={headerStyles.spotlightBadge} onClick={openLoginDialog}>
+								<GoogleIcon className={headerStyles.sparkleIcon} /> Enroll Now · 1 Hour Free
+							</div>
+						)}
 					</div>
 				</div>
 			</header>
@@ -309,6 +347,7 @@ function ConceptCard({ concept }: { concept: Concept }) {
 function PricingSection() {
 	const { addDialog } = useDialogs()
 	const { client } = useClerk()
+	const { isSignedIn } = useUser()
 
 	const handleTryFree = () => {
 		client.signIn.authenticateWithRedirect({
@@ -329,10 +368,16 @@ function PricingSection() {
 
 			{/* Try Course CTA */}
 			<div className={pricingStyles.tryFreeSection}>
-				<button className={pricingStyles.tryFreeButton} onClick={handleTryFree}>
-					<GoogleIcon className={pricingStyles.googleIcon} /> Enroll Now · 1 Hour Free
-				</button>
-				<span className={pricingStyles.tryFreeNote}>No credit card required</span>
+				{isSignedIn ? (
+					<TimeLeft />
+				) : (
+					<>
+						<button className={pricingStyles.tryFreeButton} onClick={handleTryFree}>
+							<GoogleIcon className={pricingStyles.googleIcon} /> Enroll Now · 1 Hour Free
+						</button>
+						<span className={pricingStyles.tryFreeNote}>No credit card required</span>
+					</>
+				)}
 			</div>
 
 			<div className={pricingStyles.cardsContainer}>

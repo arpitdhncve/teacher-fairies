@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@clerk/clerk-react'
 import { getAnonymousUserId } from '../utils/anonymousUserId'
 
 /**
@@ -13,9 +14,15 @@ import { getAnonymousUserId } from '../utils/anonymousUserId'
 export function Component() {
 	const navigate = useNavigate()
 	const [error, setError] = useState<string | null>(null)
+	const { userId } = useAuth()
 
 	useEffect(() => {
 		const createAndRedirect = async () => {
+			if (userId) {
+				navigate('/course-detail-info?tab=curriculum', { replace: true })
+				return
+			}
+
 			try {
 				// Get or create the anonymous user ID from localStorage
 				const anonymousId = getAnonymousUserId()
@@ -41,7 +48,7 @@ export function Component() {
 		}
 
 		createAndRedirect()
-	}, [navigate])
+	}, [navigate, userId])
 
 	if (error) {
 		return (
