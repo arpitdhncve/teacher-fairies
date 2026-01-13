@@ -59,6 +59,7 @@ export * from './constants'
 export * from './models'
 export * from './schema/FairyModeDefinition'
 export * from './schema/FairySchema'
+export * from './FairyBatchConfig'
 
 // Icons
 export * from './icons/ActivityIcon'

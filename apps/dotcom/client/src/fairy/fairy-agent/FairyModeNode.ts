@@ -1,4 +1,4 @@
-import { AgentRequest, FairyModeDefinition, FairyTask } from '@tldraw/fairy-shared'
+import { AgentRequest, FairyModeDefinition, FairyTask, FairyBatchConfig } from '@tldraw/fairy-shared'
 import { Box } from 'tldraw'
 import { FairyAgent } from './FairyAgent'
 
@@ -262,9 +262,10 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 						.find((a: FairyAgent) => a.id === partner.id)
 
 					if (partnerAgent) {
-						// Create only the NEW undistributed tasks (from currentIndex onwards)
+						// Create only the NEW undistributed tasks (from currentIndex onwards), limited by LEADER_BATCH_SIZE
+						const limit = FairyBatchConfig.LEADER_BATCH_SIZE
 						const createdTaskIds: any[] = []
-						const undistributedTasks = plannedTasks.slice(currentIndex)
+						const undistributedTasks = plannedTasks.slice(currentIndex, currentIndex + limit)
 						undistributedTasks.forEach((plannedTask, localIndex) => {
 							// Use the tempId from the planned task so await-duo-tasks-completion works correctly
 							const taskId = plannedTask.tempId as any
@@ -289,7 +290,7 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 						})
 
 						// Assign all tasks but only mark first BATCH_SIZE as in-progress
-						const BATCH_SIZE = 3
+						const BATCH_SIZE = FairyBatchConfig.FOLLOWER_BATCH_SIZE
 						const allAgents = agent.fairyApp.agents.getAgents()
 						createdTaskIds.forEach((taskId, index) => {
 							agent.fairyApp.tasks.assignFairyToTask(taskId, partner.id, allAgents)
@@ -299,9 +300,9 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 							}
 						})
 
-						// Update index to mark all tasks as distributed
+						// Update index to mark distributed tasks as distributed
 						agent.fairyApp.projects.updateProject(project.id, {
-							currentPlanIndex: plannedTasks.length,
+							currentPlanIndex: currentIndex + undistributedTasks.length,
 						})
 
 						console.log(
@@ -380,7 +381,7 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 
 				if (incompleteTasks.length === 0) {
 					agent.schedule(
-						'All current tasks have been completed. Review if more work is needed: create next batch of tasks (max 3), or call end-duo-project if complete.'
+						`All current tasks have been completed. Review if more work is needed: create next batch of tasks (max ${FairyBatchConfig.LEADER_BATCH_SIZE}), or call end-duo-project if complete.`
 					)
 					return
 				}
@@ -428,14 +429,14 @@ export const FAIRY_MODE_CHART: Record<FairyModeDefinition['type'], FairyModeNode
 
 				if (projectTasks.length === 0 && plannedTasks.length === 0) {
 					agent.schedule(
-						'There are no tasks created for the project yet. Consider creating tasks and directing your partner to start a task.'
+						`There are no tasks created for the project yet. Create the first batch of tasks (maximum ${FairyBatchConfig.LEADER_BATCH_SIZE}) and direct your partner to start.`
 					)
 					return
 				}
 
 				if (completedTasks.length === projectTasks.length && projectTasks.length > 0) {
 					agent.schedule(
-						'All current tasks have been completed. Review if more work is needed: create next batch of tasks (max 3), or call end-duo-project if complete.'
+						`All current tasks have been completed. Review if more work is needed: create next batch of tasks (max ${FairyBatchConfig.LEADER_BATCH_SIZE}), or call end-duo-project if complete.`
 					)
 					return
 				}

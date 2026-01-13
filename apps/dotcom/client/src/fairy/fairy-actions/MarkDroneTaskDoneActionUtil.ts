@@ -2,6 +2,7 @@ import {
 	MarkDroneTaskDoneAction,
 	Streaming,
 	createAgentActionInfo,
+	FairyBatchConfig,
 } from '@tldraw/fairy-shared'
 import { uniqueId } from 'tldraw'
 import { AgentHelpers } from '../fairy-agent/AgentHelpers'
@@ -11,8 +12,6 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 	static override type = 'mark-my-task-done' as const
 
 	override getInfo(action: Streaming<MarkDroneTaskDoneAction>) {
-		// Look for in-progress tasks first, then fall back to done tasks
-		// (getInfo may be called after applyAction has already marked the tasks done)
 		const currentWork = this.agent.getWork()
 		const inProgressTasks = currentWork.tasks.filter((task) => task.status === 'in-progress')
 		const doneTasks = currentWork.tasks.filter((task) => task.status === 'done')
@@ -94,9 +93,10 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 			.filter((task) => task.assignedTo === this.agent.id)
 		const remainingTodoTasks = allMyTasks.filter((task) => task.status === 'todo')
 
-		const BATCH_SIZE = 3
+		const BATCH_SIZE = FairyBatchConfig.FOLLOWER_BATCH_SIZE
 
 		if (remainingTodoTasks.length > 0) {
+
 			// Pick next batch of tasks
 			const nextBatch = remainingTodoTasks.slice(0, BATCH_SIZE)
 
