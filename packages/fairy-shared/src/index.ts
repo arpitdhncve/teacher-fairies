@@ -42,6 +42,7 @@ export type * from './types/PersistedFairyConfig'
 export type * from './types/PersistedFairyState'
 export type * from './types/PromptPart'
 export type * from './types/Streaming'
+export type * from './types/StreamActionsRequest'
 export type * from './types/WikipediaArticle'
 
 // Schemas and definitions
@@ -60,7 +61,7 @@ export * from './models'
 export * from './schema/FairyModeDefinition'
 export * from './schema/FairySchema'
 export * from './FairyBatchConfig'
-export * from './FairyReviewConfig'
+
 
 // Icons
 export * from './icons/ActivityIcon'

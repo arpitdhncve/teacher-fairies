@@ -14,12 +14,14 @@ import {
 	FairyModeDefinition,
 	FairyProject,
 	FairyProjectRole,
+	FairyRole,
 	FairyTask,
 	FairyTodoItem,
 	FairyWork,
 	FocusedShape,
 	getFairyModeDefinition,
 	PromptPart,
+	StreamActionsRequest,
 	Streaming,
 	toProjectId,
 } from '@tldraw/fairy-shared'
@@ -720,6 +722,22 @@ export class FairyAgent {
 	 * Not to be called directly. Use `prompt` instead.
 	 * This is a helper function that is used internally by the agent.
 	 */
+	/**
+	 * Modes that indicate the fairy is acting as a leader/orchestrator
+	 */
+	private static readonly LEADER_MODES = [
+		'duo-orchestrating-active',
+		'duo-orchestrating-waiting',
+		'orchestrating-active',
+		'orchestrating-waiting',
+		'working-orchestrator',
+	] as const
+
+	/**
+	 * Modes that indicate the fairy is acting as a follower/drone
+	 */
+	private static readonly FOLLOWER_MODES = ['working-drone'] as const
+
 	async *_streamActions({
 		prompt,
 		signal,
@@ -739,6 +757,31 @@ export class FairyAgent {
 			}
 		}
 
+		// Determine fairy role from current mode
+		const mode = this.mode.getMode()
+		let fairyRole: FairyRole = 'default'
+		if ((FairyAgent.LEADER_MODES as readonly string[]).includes(mode)) {
+			fairyRole = 'leader'
+		} else if ((FairyAgent.FOLLOWER_MODES as readonly string[]).includes(mode)) {
+			fairyRole = 'follower'
+		}
+
+		// Get current working task (first in-progress task assigned to this agent)
+		const allTasks = this.fairyApp.tasks.getTasks()
+		const workingTasks = allTasks.filter(
+			(task: FairyTask) => task.assignedTo === this.id && task.status === 'in-progress'
+		)
+		const currentTask = workingTasks.length > 0 ? workingTasks[0] : null
+
+		// Build request body with prompt and metadata
+		const requestBody: StreamActionsRequest = {
+			prompt: prompt as AgentPrompt,
+			metadata: {
+				fairyRole,
+				currentTask,
+			},
+		}
+
 		console.log('[FairyAgent._streamActions] FAIRY_WORKER:', FAIRY_WORKER)
 		console.log('[FairyAgent._streamActions] Sending request to:', `${FAIRY_WORKER}/stream-actions`)
 		console.log('[FairyAgent._streamActions] Request headers:', {
@@ -746,12 +789,16 @@ export class FairyAgent {
 			contentType: headers['Content-Type'],
 		})
 		console.log('[FairyAgent._streamActions] Prompt keys:', Object.keys(prompt))
+		console.log('[FairyAgent._streamActions] Metadata:', {
+			fairyRole,
+			currentTaskTitle: currentTask?.title ?? 'none',
+		})
 
 		let res: Response
 		try {
 			res = await fetch(`${FAIRY_WORKER}/stream-actions`, {
 				method: 'POST',
-				body: JSON.stringify(prompt),
+				body: JSON.stringify(requestBody),
 				headers,
 				signal,
 			})

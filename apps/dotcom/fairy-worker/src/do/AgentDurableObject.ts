@@ -1,4 +1,4 @@
-import { AgentAction, AgentPrompt, Streaming } from '@tldraw/fairy-shared'
+import { AgentAction, AgentPrompt, Streaming, StreamActionsRequest } from '@tldraw/fairy-shared'
 import { DurableObject } from 'cloudflare:workers'
 import { Environment } from '../environment'
 import { AgentService } from './AgentService'
@@ -103,10 +103,11 @@ export class AgentDurableObject extends DurableObject<Environment> {
 
 		;(async () => {
 			try {
-				const prompt = (await request.json()) as AgentPrompt
+				const body = (await request.json()) as StreamActionsRequest
+				const { prompt, metadata } = body
 
-				// Pass userId and userStub for usage recording in onFinish
-				for await (const action of this.service.streamActions(prompt, signal, userId, userStub)) {
+				// Pass userId, userStub, and metadata for model selection
+				for await (const action of this.service.streamActions(prompt, metadata, signal, userId, userStub)) {
 					if (signal.aborted) break
 					response.actions.push(action)
 					const data = `data: ${JSON.stringify(action)}\n\n`

@@ -22,6 +22,24 @@ export const AGENT_MODEL_DEFINITIONS = {
 		provider: 'openrouter',
 	},
 
+	'google/gemini-2.5-flash': {
+		name: 'google/gemini-2.5-flash',
+		id: 'google/gemini-2.5-flash',
+		provider: 'openrouter',
+	},
+
+	'anthropic/claude-opus-4.5': {
+		name: 'anthropic/claude-opus-4.5',
+		id: 'anthropic/claude-opus-4.5',
+		provider: 'openrouter',
+	},
+
+	'anthropic/claude-sonnet-4.5': {
+		name: 'anthropic/claude-sonnet-4.5',
+		id: 'anthropic/claude-sonnet-4.5',
+		provider: 'openrouter',
+	},
+
 	'claude-haiku-4-5': {
 		name: 'claude-haiku-4-5',
 		id: 'claude-haiku-4-5',
@@ -110,6 +128,36 @@ export function getModelPricingInfo(
 					cacheWriteInputPrice: 7.5,
 					outputPrice: 22.5,
 				}
+			}
+		case 'google/gemini-2.5-flash':
+			if (inputTokens <= TIER_THRESHOLD) {
+				return {
+					uncachedInputPrice: 3,
+					cacheReadInputPrice: 0.3,
+					cacheWriteInputPrice: 3.75,
+					outputPrice: 15,
+				}
+			} else {
+				return {
+					uncachedInputPrice: 6,
+					cacheReadInputPrice: 0.6,
+					cacheWriteInputPrice: 7.5,
+					outputPrice: 22.5,
+				}
+			}
+		case 'anthropic/claude-opus-4.5':
+			return {
+				uncachedInputPrice: 15,
+				cacheReadInputPrice: 1.5,
+				cacheWriteInputPrice: 18.75,
+				outputPrice: 75,
+			}
+		case 'anthropic/claude-sonnet-4.5':
+			return {
+				uncachedInputPrice: 3,
+				cacheReadInputPrice: 0.3,
+				cacheWriteInputPrice: 3.75,
+				outputPrice: 15,
 			}
 		case 'claude-haiku-4-5':
 			return {
