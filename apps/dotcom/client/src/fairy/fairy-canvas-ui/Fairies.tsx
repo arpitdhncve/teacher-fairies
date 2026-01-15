@@ -12,12 +12,6 @@ export function Fairies() {
 	const activeAgents = useValue(
 		'active fairies on page',
 		() => {
-			// Debug: Log all agents before filtering
-			console.log(`[Fairies] ===== FAIRY FILTER DEBUG =====`)
-			console.log(`[Fairies] Total agents from getAgents(): ${agents.length}`)
-			console.log(`[Fairies] Current page ID: ${currentPageId}`)
-
-			// Log each agent's state before filtering
 			agents.forEach((agent, index) => {
 				const entity = agent.getEntity()
 				const mode = agent.mode.getMode()
@@ -25,17 +19,6 @@ export function Fairies() {
 				const matchesPage = entity?.currentPageId === currentPageId
 				const willPass = hasEntity && matchesPage
 
-				console.log(`[Fairies] Agent ${index + 1}:`, {
-					id: agent.id,
-					hasEntity,
-					entityPageId: entity?.currentPageId,
-					matchesPage,
-					mode,
-					willPassFilter: willPass,
-					position: entity
-						? `(${entity.position.x.toFixed(2)}, ${entity.position.y.toFixed(2)})`
-						: 'N/A',
-				})
 			})
 
 			const filtered = agents.filter((agent) => {
@@ -43,9 +26,6 @@ export function Fairies() {
 				// Show all fairies that exist and are on the current page (no sleeping check)
 				return entity !== undefined && entity.currentPageId === currentPageId
 			})
-
-			console.log(`[Fairies] Fairies passing filter: ${filtered.length}`)
-			console.log(`[Fairies] ===== END DEBUG =====`)
 
 			return filtered
 		},

@@ -1,4 +1,4 @@
-import { useAuth, useClerk } from '@clerk/clerk-react'
+import { SignInButton, useAuth, useClerk } from '@clerk/clerk-react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { uniqueId } from 'tldraw'
@@ -6,6 +6,7 @@ import { getAnonymousUserId } from '../../../utils/anonymousUserId'
 // ✅ swap TldrawAgent -> FairyAgent
 import { FairyAgent } from '../../../fairy/fairy-agent/FairyAgent'
 import { useMaybeApp } from '../../hooks/useAppState'
+import { useCurrentFileId } from '../../hooks/useCurrentFileId'
 import { useViewportContext } from '../../hooks/useViewportContext'
 import { clearLocalSessionState } from '../../utils/local-session-state'
 import { TlaCtaButton } from '../../components/TlaCtaButton/TlaCtaButton'
@@ -973,9 +974,8 @@ function DataHandler({
 
 export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 	const auth = useAuth()
-	const { client } = useClerk()
 	const app = useMaybeApp()
-	const navigate = useNavigate()
+	const currentFileId = useCurrentFileId()
 	const [lkConnect, setLkConnect] = useState(false)
 	const [lkToken, setLkToken] = useState<string | undefined>()
 	const [lkUrl, setLkUrl] = useState<string | undefined>()
@@ -989,12 +989,20 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 		new Map()
 	)
 
-	const handleLogout = useCallback(() => {
-		auth.signOut().then(() => {
-			clearLocalSessionState()
-			navigate('/')
-		})
-	}, [auth, navigate])
+	// Detect if current file is a learning file (concept/case study)
+	// createSource format is 'lf/concept_123' or 'lf/case_study_456'
+	const isLearningFile = React.useMemo(() => {
+		if (!currentFileId || !app) return false
+		const currentFile = app.getFile(currentFileId)
+		const createSource = currentFile?.createSource
+		// Check for the lf/concept_* or lf/case_study_* format used by learning-file.tsx
+		return (createSource?.startsWith('lf/concept_') || createSource?.startsWith('lf/case_study_')) ?? false
+	}, [currentFileId, app])
+
+	// Ref to track if auto-start has been triggered
+	const autoStartTriggeredRef = useRef(false)
+
+
 
 	const handleViewCourseDetails = useCallback(() => {
 		// Open course details page in new tab
@@ -1023,11 +1031,9 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 
 	const viewportContext = useViewportContext()
 
-	const handleStartLiveKit = useCallback(async () => {
-		if (lkConnect) {
-			setLkConnect(false)
-			return
-		}
+	// Function to start LiveKit session (can be called manually or via auto-start)
+	const startLearningSession = useCallback(async () => {
+		if (lkConnect) return // Already connected, don't restart
 
 		setError(null)
 		setLkLoading(true)
@@ -1051,13 +1057,33 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 		const userID = app?.userId ?? auth.userId ?? getAnonymousUserId()
 
 		try {
+			// For logged-in users, get learning material info from the current file's createSource
+			// Format: lf/concept_123 or lf/case_study_456
+			let learningMaterialId: string | undefined = undefined
+			let learningMaterialUrl: string | undefined = undefined
+			
+			if (isLoggedIn && currentFileId && app) {
+				const currentFile = app.getFile(currentFileId)
+				const createSource = currentFile?.createSource
+				// Check for the lf/concept_* or lf/case_study_* format used by learning-file.tsx
+				if (createSource?.startsWith('lf/concept_') || createSource?.startsWith('lf/case_study_')) {
+					// Extract learningMaterialId from createSource (e.g., "lf/concept_123" -> "concept_123")
+					learningMaterialId = createSource.replace('lf/', '')
+					// Retrieve the learning material URL from localStorage (stored by learning-file.tsx)
+					learningMaterialUrl = localStorage.getItem(`learning_material_url:${createSource}`) ?? undefined
+					console.log('[ChatPanel] Using learningMaterialId from file createSource:', learningMaterialId)
+					console.log('[ChatPanel] Using learningMaterialUrl from localStorage:', learningMaterialUrl)
+				}
+			}
+
 			const response = await fetch('http://localhost:3001/start-learning', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					prompt,
 					userID,
-					learning_material_id: isLoggedIn ? undefined : 'course_info_001',
+					learning_material_id: learningMaterialId ?? (isLoggedIn ? undefined : 'course_info_001'),
+					learning_material_url: learningMaterialUrl,
 					viewportContext: {
 						isMobile,
 						isCanvasVisible,
@@ -1091,7 +1117,52 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 		} finally {
 			setLkLoading(false)
 		}
-	}, [lkConnect, auth.isSignedIn, viewportContext])
+	}, [lkConnect, auth.isSignedIn, auth.userId, viewportContext, currentFileId, app])
+
+	// Handle manual start/stop toggle
+	const handleStartLiveKit = useCallback(() => {
+		if (lkConnect) {
+			setLkConnect(false)
+			return
+		}
+		startLearningSession()
+	}, [lkConnect, startLearningSession])
+
+	// Handle stop learning session - disconnects and interrupts drawing, but does NOT navigate away
+	const handleStopLearning = useCallback(() => {
+		console.log('[ChatPanel] Stopping learning session and interrupting drawing')
+		
+		// Interrupt all agents and cancel their projects
+		if (agent) {
+			const fairyApp = (agent as any)?.fairyApp
+			const allAgents = fairyApp?.agents?.getAgents() || [agent]
+
+			for (const agentInstance of allAgents) {
+				try {
+					const project = agentInstance.getProject?.()
+					if (typeof agentInstance.interrupt === 'function') {
+						agentInstance.interrupt({ mode: 'idling', input: null })
+						console.log(`[ChatPanel] Interrupted agent ${agentInstance.id} to idling mode`)
+					}
+					if (project && fairyApp?.projects) {
+						fairyApp.projects.deleteProjectAndAssociatedTasks(project.id)
+						console.log(`[ChatPanel] Deleted project ${project.id}`)
+					}
+				} catch (err) {
+					console.error(`[ChatPanel] Error interrupting agent:`, err)
+				}
+			}
+		}
+
+		// Clear pending draw requests
+		pendingDrawRequestsRef.current.clear()
+
+		// Disconnect LiveKit and clear messages
+		setLkConnect(false)
+		setMessages([])
+		
+		// Note: No navigation - user stays on the same page
+	}, [agent])
 
 	// Show loading state if agent is not available yet
 	if (!agent) {
@@ -1163,16 +1234,9 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 				<ChatControls 
 					lkConnect={lkConnect}
 					lkLoading={lkLoading}
-					onStart={handleStartLiveKit}
-					isSignedIn={!!auth.isSignedIn}
-					onSignOut={handleLogout}
-					onSignIn={() => {
-						client.signIn.authenticateWithRedirect({
-							strategy: 'oauth_google',
-							redirectUrl: '/sso-callback',
-							redirectUrlComplete: '/',
-						})
-					}}
+					onStartLearning={startLearningSession}
+					onStopLearning={handleStopLearning}
+					isSignedIn={auth.isSignedIn ?? false}
 					error={error}
 				/>
 			</div>
@@ -1259,254 +1323,231 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 interface ChatControlsProps {
 	lkConnect: boolean
 	lkLoading: boolean
-	onStart: () => void
+	onStartLearning: () => void
+	onStopLearning: () => void
 	isSignedIn: boolean
-	onSignOut: () => void
-	onSignIn: () => void
 	error: string | null
 }
 
 function ChatControls({
 	lkConnect,
 	lkLoading,
-	onStart,
+	onStartLearning,
+	onStopLearning,
 	isSignedIn,
-	onSignOut,
-	onSignIn,
 	error,
 }: ChatControlsProps) {
 	return (
 		<>
-			<StartLearningButton
-				connected={lkConnect}
-				loading={lkLoading}
-				onClick={onStart}
-				variant={isSignedIn ? 'text' : 'icon'}
-			/>
-			
-			<AuthButton 
-				signedIn={isSignedIn} 
-				onSignOut={onSignOut} 
-				onSignIn={onSignIn} 
-			/>
-
-			{error ? (
-				<span style={{ color: '#f87171', fontSize: 12, position: 'absolute', bottom: -20 }}>
+			{/* For non-logged-in users: show small play button + Sign In button */}
+			{!isSignedIn && !lkConnect && !lkLoading && (
+				<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+					<SmallPlayButton onClick={onStartLearning} />
+					<SignInButton mode="modal">
+						<button
+							style={{
+								padding: '8px 14px',
+								borderRadius: 8,
+								background: 'rgba(255, 255, 255, 0.1)',
+								color: '#ffffff',
+								border: '1px solid rgba(255, 255, 255, 0.2)',
+								cursor: 'pointer',
+								fontSize: 13,
+								fontWeight: 500,
+								transition: 'all 0.2s ease',
+								display: 'flex',
+								alignItems: 'center',
+								gap: 6,
+							}}
+						>
+							Sign In
+						</button>
+					</SignInButton>
+				</div>
+			)}
+			{/* For logged-in users: show Start Learning button */}
+			{isSignedIn && !lkConnect && !lkLoading && (
+				<StartLearningButton onClick={onStartLearning} />
+			)}
+			{/* For non-logged-in users: show small stop button when connected */}
+			{!isSignedIn && lkConnect && (
+				<SmallStopButton onClick={onStopLearning} />
+			)}
+			{/* For logged-in users: show Stop Learning button when connected */}
+			{isSignedIn && lkConnect && (
+				<StopLearningButton onClick={onStopLearning} />
+			)}
+			{lkLoading && (
+				<div style={{ 
+					display: 'flex', 
+					alignItems: 'center', 
+					gap: 8, 
+					color: 'rgba(255,255,255,0.6)',
+					fontSize: 13,
+				}}>
+					<div
+						style={{
+							width: 14,
+							height: 14,
+							borderRadius: '50%',
+							border: '2px solid rgba(99, 102, 241, 0.3)',
+							borderTopColor: '#6366f1',
+							animation: 'spin 1s linear infinite',
+						}}
+					/>
+					Connecting...
+				</div>
+			)}
+			{error && (
+				<span style={{ color: '#f87171', fontSize: 12 }}>
 					{error}
 				</span>
-			) : null}
+			)}
 		</>
 	)
 }
 
-function StartLearningButton({
-	connected,
-	loading,
-	onClick,
-	variant,
-}: {
-	connected: boolean
-	loading: boolean
-	onClick: () => void
-	variant: 'icon' | 'text'
-}) {
-	const isDisabled = loading
-	
-	// Icon-only variant (Play button) for non-logged in users
-	if (variant === 'icon') {
-		return (
-			<button
-				onClick={onClick}
-				disabled={isDisabled}
-				title="Start Learning"
-				style={{
-					width: 42,
-					height: 42,
-					borderRadius: 12,
-					background: connected
-						? 'rgba(239, 68, 68, 0.15)'
-						: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-					color: connected ? '#fca5a5' : '#ffffff',
-					border: connected ? '1px solid rgba(239, 68, 68, 0.3)' : 'none',
-					cursor: 'pointer',
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					boxShadow: connected ? 'none' : '0 4px 14px rgba(124, 58, 237, 0.4)',
-					transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-					flexShrink: 0,
-				}}
-				onMouseEnter={(e) => {
-					if (!e.currentTarget.disabled) {
-						e.currentTarget.style.transform = 'translateY(-1px)'
-						e.currentTarget.style.filter = 'brightness(1.1)'
-					}
-				}}
-				onMouseLeave={(e) => {
-					e.currentTarget.style.transform = 'translateY(0)'
-					e.currentTarget.style.filter = 'brightness(1)'
-				}}
-			>
-				{loading ? (
-					<div
-						style={{
-							width: 16,
-							height: 16,
-							borderRadius: '50%',
-							border: '2px solid rgba(255,255,255,0.3)',
-							borderTopColor: '#fff',
-							animation: 'spin 1s linear infinite',
-						}}
-					/>
-				) : connected ? (
-					<div 
-						style={{ 
-							width: 14, 
-							height: 14, 
-							background: 'currentColor', 
-							borderRadius: 2 
-						}} 
-					/> // Square for stop
-				) : (
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-						<path d="M8 5v14l11-7z" />
-					</svg> // Play icon
-				)}
-			</button>
-		)
-	}
-
-	// Text variant for logged-in users
+// Small Play button - for non-logged-in users
+function SmallPlayButton({ onClick }: { onClick: () => void }) {
 	return (
 		<button
 			onClick={onClick}
-			disabled={isDisabled}
 			style={{
-				padding: '10px 16px',
-				borderRadius: 12,
-				background: connected
-					? 'rgba(239, 68, 68, 0.15)'
-					: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-				color: connected ? '#fca5a5' : '#ffffff',
-				border: connected ? '1px solid rgba(239, 68, 68, 0.3)' : 'none',
-				fontSize: 14,
-				fontWeight: 600,
+				width: 36,
+				height: 36,
+				borderRadius: '50%',
+				background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+				color: '#ffffff',
+				border: 'none',
 				cursor: 'pointer',
-				flex: 1,
+				transition: 'all 0.2s ease',
 				display: 'flex',
 				alignItems: 'center',
 				justifyContent: 'center',
-				boxShadow: connected ? 'none' : '0 4px 14px rgba(124, 58, 237, 0.4)',
-				transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+				boxShadow: '0 2px 8px rgba(79, 70, 229, 0.3)',
 			}}
 			onMouseEnter={(e) => {
-				if (!e.currentTarget.disabled) {
-					e.currentTarget.style.transform = 'translateY(-1px)'
-					e.currentTarget.style.filter = 'brightness(1.1)'
-				}
+				e.currentTarget.style.transform = 'scale(1.05)'
+				e.currentTarget.style.boxShadow = '0 4px 12px rgba(79, 70, 229, 0.4)'
 			}}
 			onMouseLeave={(e) => {
-				e.currentTarget.style.transform = 'translateY(0)'
-				e.currentTarget.style.filter = 'brightness(1)'
+				e.currentTarget.style.transform = 'scale(1)'
+				e.currentTarget.style.boxShadow = '0 2px 8px rgba(79, 70, 229, 0.3)'
 			}}
+			title="Start Learning"
 		>
-			{connected ? 'Stop Session' : loading ? 'Connecting...' : 'Start Learning'}
+			<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+				<polygon points="5,3 19,12 5,21" />
+			</svg>
 		</button>
 	)
 }
 
-function AuthButton({
-	signedIn,
-	onSignOut,
-	onSignIn,
-}: {
-	signedIn: boolean
-	onSignOut: () => void
-	onSignIn: () => void
-}) {
-	if (signedIn) {
-		return (
-			<button
-				onClick={onSignOut}
-				style={{
-					padding: '10px 14px',
-					borderRadius: 12,
-					background: 'transparent',
-					color: 'rgba(255, 255, 255, 0.7)',
-					border: '1px solid rgba(255, 255, 255, 0.15)',
-					cursor: 'pointer',
-					fontSize: 13,
-					fontWeight: 500,
-					transition: 'all 0.2s ease',
-					flexShrink: 0,
-				}}
-				title="Sign Out"
-				onMouseEnter={(e) => {
-					e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
-					e.currentTarget.style.color = '#fff'
-					e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
-				}}
-				onMouseLeave={(e) => {
-					e.currentTarget.style.background = 'transparent'
-					e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)'
-					e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)'
-				}}
-			>
-				Logout
-			</button>
-		)
-	}
-
+// Small Stop button - for non-logged-in users when session is active
+function SmallStopButton({ onClick }: { onClick: () => void }) {
 	return (
 		<button
+			onClick={onClick}
 			style={{
-				padding: '10px 16px',
-				borderRadius: 12,
-				background: '#ffffff', // White background for colorful icon
-				color: '#374151', // Dark Gray text
-				border: '1px solid rgba(0,0,0,0.08)',
+				width: 36,
+				height: 36,
+				borderRadius: '50%',
+				background: 'rgba(239, 68, 68, 0.15)',
+				color: '#fca5a5',
+				border: '1px solid rgba(239, 68, 68, 0.3)',
 				cursor: 'pointer',
-				fontSize: 14,
-				fontWeight: 600,
-				boxShadow: '0 4px 14px rgba(0, 0, 0, 0.1)',
-				gap: 10,
-				flex: 1,
+				transition: 'all 0.2s ease',
 				display: 'flex',
 				alignItems: 'center',
 				justifyContent: 'center',
-				transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
 			}}
-			onClick={onSignIn}
 			onMouseEnter={(e) => {
-				e.currentTarget.style.transform = 'translateY(-1px)'
-				e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.15)'
+				e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)'
+				e.currentTarget.style.color = '#fee2e2'
 			}}
 			onMouseLeave={(e) => {
-				e.currentTarget.style.transform = 'translateY(0)'
-				e.currentTarget.style.boxShadow = '0 4px 14px rgba(0, 0, 0, 0.1)'
+				e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'
+				e.currentTarget.style.color = '#fca5a5'
 			}}
+			title="Stop Learning"
 		>
-			<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-				<g fill="none" fillRule="evenodd">
-					<path
-						d="M20.64 12.2c0-.63-.06-1.25-.16-1.84H12v3.49h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.92c1.71-1.58 2.68-3.9 2.68-6.62z"
-						fill="#4285F4"
-					/>
-					<path
-						d="M12 21c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.81.54-1.85.86-3.05.86-2.34 0-4.32-1.58-5.03-3.71H3.85v2.33C5.33 18.97 8.48 21 12 21z"
-						fill="#34A853"
-					/>
-					<path
-						d="M6.97 13.71a5.17 5.17 0 0 1-.09-1.71c0-.59.1-1.18.28-1.71V7.96H3.85a9.2 9.2 0 0 0 0 8.08l3.12-2.33z"
-						fill="#FBBC05"
-					/>
-					<path
-						d="M12 5.38c1.32 0 2.5.45 3.44 1.35l2.58-2.59A9 9 0 0 0 3.85 7.96l3.12 2.33C7.68 7.94 9.66 6.36 12 5.38z"
-						fill="#EA4335"
-					/>
-				</g>
+			<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+				<rect x="6" y="6" width="12" height="12" rx="2" />
 			</svg>
-			Sign in with Google
 		</button>
 	)
 }
+
+// Start Learning button - for logged-in users when session is not active
+function StartLearningButton({ onClick }: { onClick: () => void }) {
+	return (
+		<button
+			onClick={onClick}
+			style={{
+				padding: '8px 14px',
+				borderRadius: 8,
+				background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+				color: '#ffffff',
+				border: 'none',
+				cursor: 'pointer',
+				fontSize: 13,
+				fontWeight: 500,
+				transition: 'all 0.2s ease',
+				display: 'flex',
+				alignItems: 'center',
+				gap: 6,
+				boxShadow: '0 2px 8px rgba(79, 70, 229, 0.3)',
+			}}
+			onMouseEnter={(e) => {
+				e.currentTarget.style.transform = 'translateY(-1px)'
+				e.currentTarget.style.boxShadow = '0 4px 12px rgba(79, 70, 229, 0.4)'
+			}}
+			onMouseLeave={(e) => {
+				e.currentTarget.style.transform = 'translateY(0)'
+				e.currentTarget.style.boxShadow = '0 2px 8px rgba(79, 70, 229, 0.3)'
+			}}
+		>
+			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+				<polygon points="5,3 19,12 5,21" fill="currentColor" stroke="none" />
+			</svg>
+			Start Learning
+		</button>
+	)
+}
+
+// Stop Learning button - shown when session is active
+function StopLearningButton({ onClick }: { onClick: () => void }) {
+	return (
+		<button
+			onClick={onClick}
+			style={{
+				padding: '8px 14px',
+				borderRadius: 8,
+				background: 'rgba(239, 68, 68, 0.15)',
+				color: '#fca5a5',
+				border: '1px solid rgba(239, 68, 68, 0.3)',
+				cursor: 'pointer',
+				fontSize: 13,
+				fontWeight: 500,
+				transition: 'all 0.2s ease',
+				display: 'flex',
+				alignItems: 'center',
+				gap: 6,
+			}}
+			onMouseEnter={(e) => {
+				e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)'
+				e.currentTarget.style.color = '#fee2e2'
+			}}
+			onMouseLeave={(e) => {
+				e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'
+				e.currentTarget.style.color = '#fca5a5'
+			}}
+		>
+			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+				<rect x="6" y="6" width="12" height="12" rx="2" />
+			</svg>
+			Stop Learning
+		</button>
+	)
+}
+

@@ -7,7 +7,6 @@ interface UpdateSessionRequest {
 }
 
 export const updateSession = async (req: Request, res: Response) => {
-  console.log("[updateSession] Request body:", req.body);
   const { sessionId, session_history } = req.body;
 
   if (!sessionId || !session_history) {

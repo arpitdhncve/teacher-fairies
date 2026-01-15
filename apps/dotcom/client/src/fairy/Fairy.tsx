@@ -362,13 +362,18 @@ export function Fairy({ agent }: { agent: FairyAgent }) {
 	const isMoving = useValue(
 		'is moving',
 		() => {
-			const { velocity } = agent.getEntity()
+			const entity = agent.getEntity()
+			if (!entity) return false
+			const { velocity } = entity
 			return velocity.x !== 0 && velocity.y !== 0
 		},
 		[agent]
 	)
-	const isPoofing = useValue('is poofing', () => agent.getEntity().gesture === 'poof', [agent])
-	const isActive = useValue('is active', () => agent.getEntity().pose !== 'idle', [agent])
+	const isPoofing = useValue('is poofing', () => agent.getEntity()?.gesture === 'poof', [agent])
+	const isActive = useValue('is active', () => {
+		const entity = agent.getEntity()
+		return entity ? entity.pose !== 'idle' : false
+	}, [agent])
 	const isGenerating = useValue('is generating', () => agent.requests.isGenerating(), [agent])
 	const isFairyGrabbable = isInSelectTool
 

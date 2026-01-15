@@ -19,7 +19,6 @@ export const createAgentSession = async ({ sessionId, userId, learningMaterialId
        VALUES ($1, $2, NOW(), $3, $4)`,
       [sessionId, userId, JSON.stringify([]), learningMaterialId]
     );
-    console.log(`[agentSessionService] Created session ${sessionId} for user ${userId}`);
   } catch (error) {
     console.error("[agentSessionService] Error creating session:", error);
     throw error; // Re-throw to be handled by the controller
@@ -35,11 +34,6 @@ export const updateAgentSession = async ({ sessionId, sessionHistory }: UpdateSe
       [JSON.stringify(sessionHistory), sessionId]
     );
     
-    if (result.rowCount === 0) {
-      console.warn(`[agentSessionService] Session ${sessionId} not found or not updated`);
-    } else {
-      console.log(`[agentSessionService] Updated session ${sessionId}`);
-    }
   } catch (error) {
     console.error("[agentSessionService] Error updating session:", error);
     throw error;

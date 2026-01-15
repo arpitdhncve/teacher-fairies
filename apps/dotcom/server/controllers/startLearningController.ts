@@ -31,6 +31,7 @@ interface StartLearningRequest {
   prompt: string;
   userID?: string;
   learning_material_id?: string;
+  learning_material_url?: string;
   viewportContext?: ViewportContext;
 }
 
@@ -92,7 +93,7 @@ export const startLearning = async (
   req: Request,
   res: Response<StartLearningResponse>
 ) => {
-  const { prompt, userID, learning_material_id, viewportContext }: StartLearningRequest = req.body;
+  const { prompt, userID, learning_material_id, learning_material_url, viewportContext }: StartLearningRequest = req.body;
 
   const sessionId = randomUUID();
   const roomName = `lesson_${Date.now()}`;
@@ -101,7 +102,10 @@ export const startLearning = async (
     sessionId,
     userID: userID ?? 'anonymous',
     learningMaterialId: learning_material_id,
+    learningMaterialUrl: learning_material_url ?? null,
     createdAt: new Date().toISOString(),
+    // Initial prompt for the LiveKit agent - different for logged-in vs non-logged-in users
+    initialPrompt: prompt,
     viewportContext: viewportContext ? {
       isMobile: viewportContext.isMobile ?? false,
       isCanvasVisible: viewportContext.isCanvasVisible ?? true,
@@ -113,7 +117,7 @@ export const startLearning = async (
     },
   };
 
-  console.log('[startLearning] Setting room metadata viewportContext:', JSON.stringify(metadata.viewportContext, null, 2));
+  console.log('[startLearning] Setting room metadata:', JSON.stringify(metadata, null, 2));
 
   try {
     // Load images from ../prompt-image as base64 (no data: prefix)

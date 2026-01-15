@@ -104,6 +104,14 @@ export class Slurper {
 		try {
 			const data = await db.load({ sessionId: TAB_ID })
 			if (abortSignal.aborted) return
+			
+			// If there's no schema or no records, there's nothing valid to slurp
+			// This can happen for learning files (lf/concept_*) where the IndexedDB doesn't exist
+			if (!data.schema || data.records.length === 0) {
+				console.log('[Slurper] No valid data to slurp (missing schema or no records), skipping slurp')
+				return
+			}
+			
 			// Assets will be served from the local indexedDb while they are being uploaded
 			editor.loadSnapshot({
 				document: {

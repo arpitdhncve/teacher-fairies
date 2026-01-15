@@ -22,6 +22,7 @@ import './styles/course-variables.module.css' // Load variables
 // reusing page layout from old module or creating a minimal new one inline if simple
 import oldStyles from './course-detail-info.module.css'
 import { TimeLeft } from '../components/TimeLeft'
+import { LoginRequiredDialog } from './components/LoginRequiredDialog'
 
 type TabType = 'curriculum' | 'pricing'
 
@@ -174,6 +175,7 @@ export function Component() {
 							expandedModules={expandedModules}
 							toggleModule={toggleModule}
 							course={course}
+							isSignedIn={isSignedIn ?? false}
 						/>
 					) : (
 							<PricingSection />
@@ -209,11 +211,31 @@ function CurriculumSection({
 	expandedModules,
 	toggleModule,
 	course,
+	isSignedIn,
 }: {
 	expandedModules: Set<string>
 	toggleModule: (id: string) => void
 	course: CourseWithCurriculum | null
+	isSignedIn: boolean
 }) {
+	const [showLoginDialog, setShowLoginDialog] = useState(false)
+
+	// Handler for learning material clicks (concepts and case studies)
+	const handleLearningMaterialClick = (
+		type: 'concept' | 'case_study',
+		id: string,
+		url: string
+	) => {
+		if (!isSignedIn) {
+			setShowLoginDialog(true)
+			return
+		}
+
+		// Build the createSource for file lookup/creation
+		const createSource = `${type}_${id}`
+		// Navigate to the file creation/lookup page with params
+		window.open(`/q/learning?createSource=${encodeURIComponent(createSource)}&url=${encodeURIComponent(url)}`, '_blank')
+	}
 	// Fallback values if course data is not yet loaded
 	const title = course?.name || 'Scalable Architectures'
 	const description =
@@ -289,9 +311,15 @@ function CurriculumSection({
 						moduleIndex={index + 1}
 						isExpanded={expandedModules.has(module.id)}
 						onToggle={() => toggleModule(module.id)}
+						onLearningMaterialClick={handleLearningMaterialClick}
 					/>
 				))}
 			</div>
+
+			{/* Login Required Dialog */}
+			{showLoginDialog && (
+				<LoginRequiredDialog onClose={() => setShowLoginDialog(false)} />
+			)}
 		</div>
 	)
 }
@@ -333,11 +361,13 @@ function ModuleAccordion({
 	moduleIndex,
 	isExpanded,
 	onToggle,
+	onLearningMaterialClick,
 }: {
 	module: ApiModule
 	moduleIndex: number
 	isExpanded: boolean
 	onToggle: () => void
+	onLearningMaterialClick: (type: 'concept' | 'case_study', id: string, url: string) => void
 }) {
 	const caseStudyCount = module.concepts.reduce((acc, concept) => acc + concept.caseStudies.length, 0)
 
@@ -373,7 +403,11 @@ function ModuleAccordion({
 			{isExpanded && (
 				<div className={curriculumStyles.moduleContent}>
 					{module.concepts.map((concept) => (
-						<ConceptCard key={concept.id} concept={concept} />
+						<ConceptCard 
+							key={concept.id} 
+							concept={concept} 
+							onLearningMaterialClick={onLearningMaterialClick}
+						/>
 					))}
 				</div>
 			)}
@@ -383,20 +417,25 @@ function ModuleAccordion({
 
 // ============ Concept Card ============
 
-function ConceptCard({ concept }: { concept: ApiConcept }) {
+function ConceptCard({ 
+	concept, 
+	onLearningMaterialClick 
+}: { 
+	concept: ApiConcept
+	onLearningMaterialClick: (type: 'concept' | 'case_study', id: string, url: string) => void
+}) {
 	return (
 		<div className={curriculumStyles.conceptItem}>
 			<div className={curriculumStyles.conceptHeader}>
 				<h4 className={curriculumStyles.conceptTitle}>{concept.name}</h4>
 				{concept.conceptUrl && (
-					<a
-						href={concept.conceptUrl}
-						target="_blank"
-						rel="noopener noreferrer"
+					<button
+						onClick={() => onLearningMaterialClick('concept', concept.id, concept.conceptUrl!)}
 						className={curriculumStyles.readButton}
+						style={{ cursor: 'pointer', border: 'none', background: 'inherit' }}
 					>
-						Read Concept
-					</a>
+						Learn Concept
+					</button>
 				)}
 			</div>
 			<p className={curriculumStyles.moduleDesc}>{concept.description}</p>{' '}
@@ -407,12 +446,11 @@ function ConceptCard({ concept }: { concept: ApiConcept }) {
 					<div className={curriculumStyles.sectionLabel}>Real World Case Studies</div>
 					<div className={curriculumStyles.caseStudyGrid}>
 						{concept.caseStudies.map((cs) => (
-							<a
+							<button
 								key={cs.id}
-								href={cs.url}
-								target="_blank"
-								rel="noopener noreferrer"
+								onClick={() => onLearningMaterialClick('case_study', cs.id, cs.url)}
 								className={curriculumStyles.caseStudyCard}
+								style={{ cursor: 'pointer', border: 'none', textAlign: 'left' }}
 							>
 								{/* Assuming getFaviconUrl works */}
 								<img
@@ -425,7 +463,7 @@ function ConceptCard({ concept }: { concept: ApiConcept }) {
 									}}
 								/>
 								<span className={curriculumStyles.csTitle}>{cs.title}</span>
-							</a>
+							</button>
 						))}
 					</div>
 				</div>

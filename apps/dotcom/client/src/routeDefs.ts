@@ -7,6 +7,7 @@ export const ROUTES = {
 	tlaNew: `/new`,
 	pricing: `/pricing`,
 	courseDetailInfo: `/course-detail-info`,
+	tlaLearningFile: `/q/learning`,
 	tlaFile: `/f/:fileSlug`,
 	tlaFileHistory: `/f/:fileSlug/history`,
 	tlaFileHistorySnapshot: `/f/:fileSlug/history/:timestamp`,

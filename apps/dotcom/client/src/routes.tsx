@@ -72,6 +72,7 @@ export const router = createRoutesFromElements(
 			<Route path={ROUTES.courseDetailInfo} lazy={() => import('./pages/course-detail-info')} />
 			<Route element={<NoIndex />}>
 				<Route path={ROUTES.tlaNew} lazy={() => import('./pages/tla-new')} />
+				<Route path={ROUTES.tlaLearningFile} lazy={() => import('./tla/pages/learning-file')} />
 				<Route path={ROUTES.tlaOptIn} loader={() => redirect(routes.tlaRoot())} />
 				<Route path={ROUTES.tlaLocalFile} lazy={() => import('./tla/pages/local-file')} />
 				<Route

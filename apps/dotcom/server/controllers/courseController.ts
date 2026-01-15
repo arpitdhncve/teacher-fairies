@@ -26,8 +26,6 @@ export const getCourse = async (req: Request, res: Response) => {
       });
     }
 
-    console.log("[getCourse] Course:", JSON.stringify(course, null, 2));
-
     return res.json({
       status: "success",
       course,

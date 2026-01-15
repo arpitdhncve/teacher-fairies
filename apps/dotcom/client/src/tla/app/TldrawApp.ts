@@ -731,6 +731,24 @@ export class TldrawApp {
 		return this.getUserOwnFiles().find((f) => f.id === fileId) ?? null
 	}
 
+	/**
+	 * Find a file by its createSource field.
+	 * Used for looking up existing learning material files.
+	 */
+	getFileByCreateSource(createSource: string): TlaFile | null {
+		if (!createSource) return null
+		if (this.isGroupsMigrated()) {
+			for (const group of this.getGroupMemberships()) {
+				const file = group.groupFiles.find(
+					(gf) => !gf.file.isDeleted && gf.file.createSource === createSource
+				)?.file
+				if (file) return file 
+			}
+			return null
+		}
+		return this.getUserOwnFiles().find((f) => !f.isDeleted && f.createSource === createSource) ?? null
+	}
+
 	canUpdateFile(fileId: string): boolean {
 		const file = this.getFile(fileId)
 		if (!file) return false
