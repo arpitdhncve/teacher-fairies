@@ -4,7 +4,7 @@ import pool from "../utils/db";
 interface SessionParams {
   sessionId: string;
   userId: string;
-  conceptId?: string;
+  learningMaterialId?: string;
 }
 
 interface UpdateSessionParams {
@@ -12,12 +12,12 @@ interface UpdateSessionParams {
   sessionHistory: any;
 }
 
-export const createAgentSession = async ({ sessionId, userId, conceptId }: SessionParams) => {
+export const createAgentSession = async ({ sessionId, userId, learningMaterialId }: SessionParams) => {
   try {
     await pool.query(
-      `INSERT INTO agent_session ("sessionID", "userID", "started_on", "session_history", "concept_id")
+      `INSERT INTO agent_session ("sessionID", "userID", "started_on", "session_history", "learning_material_id")
        VALUES ($1, $2, NOW(), $3, $4)`,
-      [sessionId, userId, JSON.stringify([]), conceptId]
+      [sessionId, userId, JSON.stringify([]), learningMaterialId]
     );
     console.log(`[agentSessionService] Created session ${sessionId} for user ${userId}`);
   } catch (error) {
@@ -65,14 +65,14 @@ export const getAgentSession = async (sessionId: string) => {
 
 };
 
-export const getLatestAgentSessions = async (userId: string, conceptId: string, limit: number = 2) => {
+export const getLatestAgentSessions = async (userId: string, learningMaterialId: string, limit: number = 2) => {
   try {
     const result = await pool.query(
       `SELECT * FROM agent_session 
-       WHERE "userID" = $1 AND "concept_id" = $2
+       WHERE "userID" = $1 AND "learning_material_id" = $2
        ORDER BY "started_on" DESC 
        LIMIT $3`,
-      [userId, conceptId, limit]
+      [userId, learningMaterialId, limit]
     );
 
     return result.rows;

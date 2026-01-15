@@ -1057,7 +1057,7 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 				body: JSON.stringify({
 					prompt,
 					userID,
-					concept_id: isLoggedIn ? undefined : 'course_info_001',
+					learning_material_id: isLoggedIn ? undefined : 'course_info_001',
 					viewportContext: {
 						isMobile,
 						isCanvasVisible,

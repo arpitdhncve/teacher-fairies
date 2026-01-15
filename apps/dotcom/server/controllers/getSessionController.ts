@@ -2,17 +2,17 @@ import { Request, Response } from "express";
 import { getAgentSession, getLatestAgentSessions } from "../services/agentSessionService";
 
 export const getLatestSessions = async (req: Request, res: Response) => {
-  const { userID, concept_id } = req.query;
+  const { userID, learning_material_id } = req.query;
 
-  if (!userID || !concept_id) {
+  if (!userID || !learning_material_id) {
     return res.status(400).json({
       status: "error",
-      message: "Missing required query parameters: userID, concept_id",
+      message: "Missing required query parameters: userID, learning_material_id",
     });
   }
 
   try {
-    const sessions = await getLatestAgentSessions(userID as string, concept_id as string, 2);
+    const sessions = await getLatestAgentSessions(userID as string, learning_material_id as string, 2);
     return res.json({
       status: "success",
       sessions,

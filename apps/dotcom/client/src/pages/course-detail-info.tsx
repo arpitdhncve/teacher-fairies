@@ -1,17 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useDialogs } from 'tldraw'
-import { TlaSignInDialog } from '../tla/components/dialogs/TlaSignInDialog'
 import { useClerk, useUser } from '@clerk/clerk-react'
 import {
-	MODULES,
+	MODULES as FALLBACK_MODULES,
 	getFaviconUrl,
-	getTotalArchitectureQuestions,
-	getTotalCaseStudies,
-	getTotalConcepts,
-	type Concept,
-	type Module,
+	getTotalArchitectureQuestions as getFallbackTotalArchitectureQuestions,
+	getTotalCaseStudies as getFallbackTotalCaseStudies,
+	getTotalConcepts as getFallbackTotalConcepts,
 } from './courseData'
+import { useCourseData } from './hooks/useCourseData'
+import type { ApiConcept, ApiModule, CourseWithCurriculum } from './types/courseTypes'
 
 // Import New Modular Styles
 import curriculumStyles from './styles/course-curriculum.module.css'
@@ -26,6 +25,39 @@ import { TimeLeft } from '../components/TimeLeft'
 
 type TabType = 'curriculum' | 'pricing'
 
+const COURSE_ID = 'system-design-101'
+
+// ============ Utility Functions for Dynamic Stats ============
+
+function computeTotalModules(course: CourseWithCurriculum | null): number {
+	return course?.modules?.length ?? FALLBACK_MODULES.length
+}
+
+function computeTotalConcepts(course: CourseWithCurriculum | null): number {
+	if (!course?.modules) return getFallbackTotalConcepts()
+	return course.modules.reduce((total, mod) => total + mod.concepts.length, 0)
+}
+
+function computeTotalCaseStudies(course: CourseWithCurriculum | null): number {
+	if (!course?.modules) return getFallbackTotalCaseStudies()
+	return course.modules.reduce(
+		(total, mod) =>
+			total + mod.concepts.reduce((cTotal, concept) => cTotal + concept.caseStudies.length, 0),
+		0
+	)
+}
+
+function computeTotalLearningOutcomes(course: CourseWithCurriculum | null): number {
+	if (!course?.modules) return getFallbackTotalArchitectureQuestions()
+	return course.modules.reduce(
+		(total, mod) =>
+			total + mod.concepts.reduce((cTotal, concept) => cTotal + concept.learningOutcomes.length, 0),
+		0
+	)
+}
+
+// ============ Main Component ============
+
 export function Component() {
 	const [searchParams] = useSearchParams()
 	const initialTab = (searchParams.get('tab') as TabType) || 'curriculum'
@@ -39,12 +71,15 @@ export function Component() {
 	}, [searchParams])
 
 	// Removed initial expanded state for premium "clean" look
-	const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set())
+	const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set())
 	const { addDialog } = useDialogs()
 	const { client, signOut } = useClerk()
 	const { user, isSignedIn } = useUser()
 
-	const toggleModule = (moduleId: number) => {
+	// Fetch course data from API
+	const { course, loading: courseLoading } = useCourseData(COURSE_ID)
+
+	const toggleModule = (moduleId: string) => {
 		setExpandedModules((prev) => {
 			const next = new Set(prev)
 			if (next.has(moduleId)) {
@@ -135,8 +170,12 @@ export function Component() {
 					{/* Content Area */}
 					<div>
 						{activeTab === 'curriculum' ? (
-							<CurriculumSection expandedModules={expandedModules} toggleModule={toggleModule} />
-						) : (
+						<CurriculumSection
+							expandedModules={expandedModules}
+							toggleModule={toggleModule}
+							course={course}
+						/>
+					) : (
 							<PricingSection />
 						)}
 					</div>
@@ -164,40 +203,78 @@ export function Component() {
 	)
 }
 
-// Curriculum Section
+// ============ Curriculum Section ============
+
 function CurriculumSection({
 	expandedModules,
 	toggleModule,
+	course,
 }: {
-	expandedModules: Set<number>
-	toggleModule: (id: number) => void
+	expandedModules: Set<string>
+	toggleModule: (id: string) => void
+	course: CourseWithCurriculum | null
 }) {
+	// Fallback values if course data is not yet loaded
+	const title = course?.name || 'Scalable Architectures'
+	const description =
+		course?.description ||
+		'Master system design with our interactive AI tutor. Prepare for senior engineering interviews with real-world case studies.'
+	const idealFor = course?.idealFor
+	const duration = course?.duration
+
+	// Use dynamic modules from API or fallback to hardcoded data
+	const modules: ApiModule[] = course?.modules ?? mapFallbackModules()
+
+	// Compute stats dynamically
+	const totalModules = computeTotalModules(course)
+	const totalConcepts = computeTotalConcepts(course)
+	const totalCaseStudies = computeTotalCaseStudies(course)
+	const totalQuestions = computeTotalLearningOutcomes(course)
+
 	return (
 		<div className={curriculumStyles.curriculum}>
 			{/* Hero */}
 			<div className={curriculumStyles.hero}>
-				<h1 className={curriculumStyles.title}>Scalable Architectures</h1>
-				<p className={curriculumStyles.subtitle}>
-					Master system design with our interactive AI tutor. <br />
-					Prepare for senior engineering interviews with real-world case studies.
-				</p>
+				<h1 className={curriculumStyles.title}>{title}</h1>
+				<p className={curriculumStyles.subtitle}>{description}</p>
+
+				{/* Meta Badges: Ideal For & Duration */}
+				{(idealFor || duration) && (
+					<div className={curriculumStyles.metaContainer}>
+						{idealFor && (
+							<span className={curriculumStyles.metaBadge}>
+								<span className={curriculumStyles.metaBadgeIcon}>🎯</span>
+								<span className={curriculumStyles.metaBadgeLabel}>Best for:</span>
+								{idealFor}
+							</span>
+						)}
+						{idealFor && duration && <span className={curriculumStyles.metaDivider} />}
+						{duration && (
+							<span className={curriculumStyles.metaBadge}>
+								<span className={curriculumStyles.metaBadgeIcon}>⏱️</span>
+								<span className={curriculumStyles.metaBadgeLabel}>Approx Duration:</span>
+								{duration}
+							</span>
+						)}
+					</div>
+				)}
 
 				{/* Stats */}
 				<div className={curriculumStyles.statsContainer}>
 					<div className={curriculumStyles.statItem}>
-						<span className={curriculumStyles.statValue}>{MODULES.length}</span>
+						<span className={curriculumStyles.statValue}>{totalModules}</span>
 						<span className={curriculumStyles.statLabel}>Modules</span>
 					</div>
 					<div className={curriculumStyles.statItem}>
-						<span className={curriculumStyles.statValue}>{getTotalConcepts()}</span>
+						<span className={curriculumStyles.statValue}>{totalConcepts}</span>
 						<span className={curriculumStyles.statLabel}>Concepts</span>
 					</div>
 					<div className={curriculumStyles.statItem}>
-						<span className={curriculumStyles.statValue}>{getTotalCaseStudies()}</span>
+						<span className={curriculumStyles.statValue}>{totalCaseStudies}</span>
 						<span className={curriculumStyles.statLabel}>Case Studies</span>
 					</div>
 					<div className={curriculumStyles.statItem}>
-						<span className={curriculumStyles.statValue}>{getTotalArchitectureQuestions()}</span>
+						<span className={curriculumStyles.statValue}>{totalQuestions}</span>
 						<span className={curriculumStyles.statLabel}>Questions</span>
 					</div>
 				</div>
@@ -205,10 +282,11 @@ function CurriculumSection({
 
 			{/* Modules */}
 			<div className={curriculumStyles.moduleList}>
-				{MODULES.map((module) => (
+				{modules.map((module, index) => (
 					<ModuleAccordion
 						key={module.id}
 						module={module}
+						moduleIndex={index + 1}
 						isExpanded={expandedModules.has(module.id)}
 						onToggle={() => toggleModule(module.id)}
 					/>
@@ -218,22 +296,50 @@ function CurriculumSection({
 	)
 }
 
-// Helper to count case studies in a module
-function getCaseStudyCount(module: Module): number {
-	return module.concepts.reduce((acc, concept) => acc + concept.caseStudies.length, 0)
+// ============ Fallback Mapper ============
+
+/**
+ * Maps the hardcoded MODULES to ApiModule format for fallback
+ */
+function mapFallbackModules(): ApiModule[] {
+	return FALLBACK_MODULES.map((mod) => ({
+		id: String(mod.id),
+		name: mod.topicName,
+		description: mod.description,
+		concepts: mod.concepts.map((concept) => ({
+			id: String(concept.id),
+			orderIndex: concept.id,
+			name: concept.name,
+			description: concept.description,
+			conceptUrl: concept.conceptUrl || null,
+			caseStudies: concept.caseStudies.map((cs, idx) => ({
+				id: `${concept.id}-cs-${idx}`,
+				title: cs.title,
+				url: cs.url,
+				source: cs.source,
+			})),
+			learningOutcomes: concept.architectureQuestions.map((q, idx) => ({
+				id: `${concept.id}-lo-${idx}`,
+				description: q,
+			})),
+		})),
+	}))
 }
 
-// Module Accordion
+// ============ Module Accordion ============
+
 function ModuleAccordion({
 	module,
+	moduleIndex,
 	isExpanded,
 	onToggle,
 }: {
-	module: Module
+	module: ApiModule
+	moduleIndex: number
 	isExpanded: boolean
 	onToggle: () => void
 }) {
-	const caseStudyCount = getCaseStudyCount(module)
+	const caseStudyCount = module.concepts.reduce((acc, concept) => acc + concept.caseStudies.length, 0)
 
 	return (
 		<div
@@ -241,8 +347,8 @@ function ModuleAccordion({
 		>
 			<button className={curriculumStyles.moduleHeader} onClick={onToggle}>
 				<div className={curriculumStyles.moduleInfo}>
-					<span className={curriculumStyles.moduleNumber}>Module {module.id}</span>
-					<h3 className={curriculumStyles.moduleTitle}>{module.topicName}</h3>
+					<span className={curriculumStyles.moduleNumber}>Module {moduleIndex}</span>
+					<h3 className={curriculumStyles.moduleTitle}>{module.name}</h3>
 					<p className={curriculumStyles.moduleDesc}>{module.description}</p>
 				</div>
 				<div className={curriculumStyles.moduleBadges}>
@@ -275,8 +381,9 @@ function ModuleAccordion({
 	)
 }
 
-// Concept Card
-function ConceptCard({ concept }: { concept: Concept }) {
+// ============ Concept Card ============
+
+function ConceptCard({ concept }: { concept: ApiConcept }) {
 	return (
 		<div className={curriculumStyles.conceptItem}>
 			<div className={curriculumStyles.conceptHeader}>
@@ -299,9 +406,9 @@ function ConceptCard({ concept }: { concept: Concept }) {
 				<div className={curriculumStyles.caseStudiesSection}>
 					<div className={curriculumStyles.sectionLabel}>Real World Case Studies</div>
 					<div className={curriculumStyles.caseStudyGrid}>
-						{concept.caseStudies.map((cs, idx) => (
+						{concept.caseStudies.map((cs) => (
 							<a
-								key={idx}
+								key={cs.id}
 								href={cs.url}
 								target="_blank"
 								rel="noopener noreferrer"
@@ -310,7 +417,7 @@ function ConceptCard({ concept }: { concept: Concept }) {
 								{/* Assuming getFaviconUrl works */}
 								<img
 									src={getFaviconUrl(cs.url)}
-									alt={cs.source}
+									alt={cs.source || 'Source'}
 									className={curriculumStyles.companyLogo}
 									onError={(e) => {
 										// Fallback if favicon fails (optional)
@@ -323,17 +430,17 @@ function ConceptCard({ concept }: { concept: Concept }) {
 					</div>
 				</div>
 			)}
-			{/* Architecture Questions */}
-			{concept.architectureQuestions.length > 0 && (
+			{/* Learning Outcomes / Interview Questions */}
+			{concept.learningOutcomes.length > 0 && (
 				<div className={curriculumStyles.interviewSection}>
 					<div className={curriculumStyles.sectionLabel}>
 						<span style={{ color: '#d97706' }}>⚡</span> Interview Prep
 					</div>
 					<div>
-						{concept.architectureQuestions.map((q, idx) => (
-							<div key={idx} className={curriculumStyles.questionItem}>
+						{concept.learningOutcomes.map((outcome) => (
+							<div key={outcome.id} className={curriculumStyles.questionItem}>
 								<span className={curriculumStyles.qIcon}>?</span>
-								<span>{q}</span>
+								<span>{outcome.description}</span>
 							</div>
 						))}
 					</div>
@@ -343,7 +450,8 @@ function ConceptCard({ concept }: { concept: Concept }) {
 	)
 }
 
-// Pricing Section
+// ============ Pricing Section ============
+
 function PricingSection() {
 	const { addDialog } = useDialogs()
 	const { client } = useClerk()

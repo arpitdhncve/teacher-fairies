@@ -25,6 +25,7 @@ import {
 import translationsEnJson from '../../../public/tla/locales-compiled/en.json'
 import { ErrorPage } from '../../components/ErrorPage/ErrorPage'
 import { SignedInAnalytics, SignedOutAnalytics, trackEvent } from '../../utils/analytics'
+import { clearAnonymousUserId } from '../../utils/anonymousUserId'
 import { globalEditor } from '../../utils/globalEditor'
 import { TlaCookieConsent } from '../components/dialogs/TlaCookieConsent'
 import { TlaLegalAcceptance } from '../components/dialogs/TlaLegalAcceptance'
@@ -230,6 +231,7 @@ function SignedInProvider({
 			updateLocalSessionState(() => ({
 				auth: { userId: auth.userId },
 			}))
+			clearAnonymousUserId()
 		} else {
 			clearLocalSessionState()
 		}

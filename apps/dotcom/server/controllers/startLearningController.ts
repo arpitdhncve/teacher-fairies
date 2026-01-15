@@ -30,7 +30,7 @@ interface ViewportContext {
 interface StartLearningRequest {
   prompt: string;
   userID?: string;
-  concept_id?: string;
+  learning_material_id?: string;
   viewportContext?: ViewportContext;
 }
 
@@ -92,7 +92,7 @@ export const startLearning = async (
   req: Request,
   res: Response<StartLearningResponse>
 ) => {
-  const { prompt, userID, concept_id, viewportContext }: StartLearningRequest = req.body;
+  const { prompt, userID, learning_material_id, viewportContext }: StartLearningRequest = req.body;
 
   const sessionId = randomUUID();
   const roomName = `lesson_${Date.now()}`;
@@ -100,7 +100,7 @@ export const startLearning = async (
   const metadata = {
     sessionId,
     userID: userID ?? 'anonymous',
-    conceptId: concept_id,
+    learningMaterialId: learning_material_id,
     createdAt: new Date().toISOString(),
     viewportContext: viewportContext ? {
       isMobile: viewportContext.isMobile ?? false,
@@ -144,7 +144,7 @@ export const startLearning = async (
     await createAgentSession({ 
       sessionId, 
       userId: metadata.userID,
-      conceptId: concept_id
+      learningMaterialId: learning_material_id
     });
 
     return res.json({

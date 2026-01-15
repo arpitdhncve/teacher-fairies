@@ -3,7 +3,7 @@ import { getSession, getLatestSessions } from '../controllers/getSessionControll
 
 const router = Router();
 
-// GET /session/history?userID=...&concept_id=...
+// GET /session/history?userID=...&learning_material_id=...
 router.get('/session/history', getLatestSessions);
 
 // GET /session/:sessionId

@@ -6,6 +6,7 @@ import resumeLearningRoutes from "./routes/resumeLearningRoutes";
 import snapshotCanvasRoutes from "./routes/snapshotCanvasRoutes";
 import taskLogsRoutes from "./routes/taskLogsRoutes";
 import sessionRoutes from "./routes/sessionRoutes";
+import courseRoutes from "./routes/courseRoutes";
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use("/", resumeLearningRoutes);
 app.use("/", snapshotCanvasRoutes);
 app.use("/", taskLogsRoutes);
 app.use("/", sessionRoutes);
+app.use("/", courseRoutes);
 
 export default app;
 
