@@ -14,13 +14,13 @@ export type FairyRole = 'leader' | 'follower' | 'default'
  */
 export const FairyModelConfig = {
 	/** Model for leader agent (orchestrator) - planning and coordination */
-	LEADER_MODEL: 'anthropic/claude-sonnet-4.5' as AgentModelName,
+	LEADER_MODEL: 'google/gemini-3-flash-preview' as AgentModelName,
 
 	/** Model for follower agent (drone) - task execution */
 	FOLLOWER_MODEL: 'google/gemini-3-flash-preview' as AgentModelName,
 
 	/** Model for review tasks - higher quality for cleanup */
-	REVIEW_MODEL: 'google/gemini-2.5-flash' as AgentModelName,
+	REVIEW_MODEL: 'anthropic/claude-sonnet-4.5' as AgentModelName,
 
 	/** Default model when role is not specified */
 	DEFAULT_MODEL: 'google/gemini-3-flash-preview' as AgentModelName,
@@ -39,10 +39,10 @@ export type FairyModelConfigType = typeof FairyModelConfig
  */
 export const FairyBatchConfig = {
 	/** Number of tasks the leader marks in-progress when distributing */
-	LEADER_BATCH_SIZE: 2,
+	LEADER_BATCH_SIZE: 4,
 
 	/** Number of tasks the follower picks up after completing a batch */
-	FOLLOWER_BATCH_SIZE: 2,
+	FOLLOWER_BATCH_SIZE: 4,
 } as const
 
 export type FairyBatchConfigType = typeof FairyBatchConfig

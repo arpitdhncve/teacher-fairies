@@ -9,6 +9,7 @@ import {
   createRoomWithMetadata,
 } from "../utils/livekitUtils";
 import { createAgentSession } from "../services/agentSessionService";
+import { getLearningProgress, LastLearnedData } from "../services/learningProgressService";
 
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -98,6 +99,20 @@ export const startLearning = async (
   const sessionId = randomUUID();
   const roomName = `lesson_${Date.now()}`;
 
+  // Fetch lastLearned data from database if userID and learning_material_id are provided
+  let lastLearned: LastLearnedData | null = null;
+  if (userID && learning_material_id) {
+    try {
+      // createSource format in DB is 'lf/concept_123' or 'lf/case_study_456'
+      const createSource = `lf/${learning_material_id}`;
+      lastLearned = await getLearningProgress({ userId: userID, createSource });
+      console.log('[startLearning] Fetched lastLearned from DB:', lastLearned);
+    } catch (err) {
+      console.warn('[startLearning] Failed to fetch lastLearned:', err);
+      // Continue without lastLearned data
+    }
+  }
+
   const metadata = {
     sessionId,
     userID: userID ?? 'anonymous',
@@ -106,6 +121,9 @@ export const startLearning = async (
     createdAt: new Date().toISOString(),
     // Initial prompt for the LiveKit agent - different for logged-in vs non-logged-in users
     initialPrompt: prompt,
+    // lastLearned data from database (page_number and last_thinking)
+    lastLearnedPageNumber: lastLearned?.page_number ?? null,
+    lastLearnedThinking: lastLearned?.last_thinking ?? null,
     viewportContext: viewportContext ? {
       isMobile: viewportContext.isMobile ?? false,
       isCanvasVisible: viewportContext.isCanvasVisible ?? true,

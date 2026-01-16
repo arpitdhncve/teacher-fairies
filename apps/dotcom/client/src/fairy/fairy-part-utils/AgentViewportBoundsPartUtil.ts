@@ -6,7 +6,10 @@ export class AgentViewportBoundsPartUtil extends PromptPartUtil<AgentViewportBou
 	static override type = 'agentViewportBounds' as const
 
 	override getPart(request: AgentRequest, helpers: AgentHelpers): AgentViewportBoundsPart {
-		const offsetAgentBounds = helpers.applyOffsetToBox(request.bounds)
+		// Use the user's viewport bounds for SafeMinX/SafeMaxX calculations
+		// Task bounds (request.bounds) vary per task, but the visible canvas is constant
+		const userBounds = this.agent.editor.getViewportPageBounds()
+		const offsetAgentBounds = helpers.applyOffsetToBox(userBounds)
 
 		return {
 			type: 'agentViewportBounds',

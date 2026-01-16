@@ -79,6 +79,7 @@ export const file = table('file')
 		isEmpty: boolean(),
 		isDeleted: boolean(),
 		createSource: string().optional(),
+		lastLearned: string().optional(), // JSONB stored as string: {"page_number": 1, "last_thinking": "..."}
 	})
 	.primaryKey('id')
 

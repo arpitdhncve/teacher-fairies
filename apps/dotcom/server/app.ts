@@ -7,6 +7,7 @@ import snapshotCanvasRoutes from "./routes/snapshotCanvasRoutes";
 import taskLogsRoutes from "./routes/taskLogsRoutes";
 import sessionRoutes from "./routes/sessionRoutes";
 import courseRoutes from "./routes/courseRoutes";
+import learningProgressRoutes from "./routes/learningProgressRoutes";
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use("/", snapshotCanvasRoutes);
 app.use("/", taskLogsRoutes);
 app.use("/", sessionRoutes);
 app.use("/", courseRoutes);
+app.use("/", learningProgressRoutes);
 
 export default app;
 
