@@ -63,9 +63,14 @@ export const router = createRoutesFromElements(
 		}}
 	>
 		<Route lazy={() => import('./tla/providers/TlaRootProviders')}>
+			{/* Landing page for non-logged-in users */}
+			<Route
+				path={ROUTES.landingPage}
+				lazy={() => import('./pages/landingPage')}
+			/>
 			{/* Create unique file for each anonymous user */}
 			<Route
-				path={ROUTES.tlaRoot}
+				path={ROUTES.anonymousFile}
 				lazy={() => import('./pages/anonymous-file')}
 			/>
 			<Route path={ROUTES.pricing} lazy={() => import('./pages/pricing')} />
@@ -73,7 +78,7 @@ export const router = createRoutesFromElements(
 			<Route element={<NoIndex />}>
 				<Route path={ROUTES.tlaNew} lazy={() => import('./pages/tla-new')} />
 				<Route path={ROUTES.tlaLearningFile} lazy={() => import('./tla/pages/learning-file')} />
-				<Route path={ROUTES.tlaOptIn} loader={() => redirect(routes.tlaRoot())} />
+				<Route path={ROUTES.tlaOptIn} loader={() => redirect(routes.landingPage())} />
 				<Route path={ROUTES.tlaLocalFile} lazy={() => import('./tla/pages/local-file')} />
 				<Route
 					path={ROUTES.tlaLocalFileIndex}

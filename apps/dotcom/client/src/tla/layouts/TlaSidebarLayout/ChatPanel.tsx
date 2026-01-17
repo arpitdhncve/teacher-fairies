@@ -1005,8 +1005,6 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 	// Ref to track if auto-start has been triggered
 	const autoStartTriggeredRef = useRef(false)
 
-
-
 	const handleViewCourseDetails = useCallback(() => {
 		// Open course details page in new tab
 		window.open('/course-detail-info', '_blank')
@@ -1121,6 +1119,18 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 			setLkLoading(false)
 		}
 	}, [lkConnect, auth.isSignedIn, auth.userId, viewportContext, currentFileId, app])
+
+	// Auto-start learning session if user came from landing page
+	useEffect(() => {
+		const shouldAutoStart = localStorage.getItem('auto_start_learning')
+		if (shouldAutoStart === 'true' && !autoStartTriggeredRef.current && agent) {
+			// Clear the flag immediately to prevent re-triggering
+			localStorage.removeItem('auto_start_learning')
+			autoStartTriggeredRef.current = true
+			console.log('[ChatPanel] Auto-starting learning session from landing page')
+			startLearningSession()
+		}
+	}, [agent, startLearningSession])
 
 	// Handle manual start/stop toggle
 	const handleStartLiveKit = useCallback(() => {
@@ -1373,7 +1383,7 @@ function ChatControls({
 }: ChatControlsProps) {
 	return (
 		<>
-				{/* For non-logged-in users: show small play button + Sign In with Google button */}
+			{/* For non-logged-in users: show play button (purple) when not connected + Sign In with Google button */}
 			{!isSignedIn && !lkConnect && !lkLoading && (
 				<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
 					<SmallPlayButton onClick={onStartLearning} />

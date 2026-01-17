@@ -21,10 +21,10 @@ if (!PUBLISHABLE_KEY) {
 createRoot(document.getElementById('root')!).render(
 	<ClerkProvider
 		publishableKey={PUBLISHABLE_KEY}
-		afterSignOutUrl={routes.tlaRoot()}
+		afterSignOutUrl={routes.landingPage()}
 		signInUrl="/"
-		signInFallbackRedirectUrl={routes.tlaRoot()}
-		signUpFallbackRedirectUrl={routes.tlaRoot()}
+		signInFallbackRedirectUrl={routes.landingPage()}
+		signUpFallbackRedirectUrl={routes.landingPage()}
 	>
 		<HelmetProvider>
 			<Head />

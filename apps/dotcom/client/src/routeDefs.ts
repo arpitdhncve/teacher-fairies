@@ -3,7 +3,8 @@ import { assert } from 'tldraw'
 export const ROUTES = {
 	tlaOptIn: '/preview',
 
-	tlaRoot: `/`,
+	landingPage: `/`,
+	anonymousFile: `/anonymous-file`,
 	tlaNew: `/new`,
 	pricing: `/pricing`,
 	courseDetailInfo: `/course-detail-info`,

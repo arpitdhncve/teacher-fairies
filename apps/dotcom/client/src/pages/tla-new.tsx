@@ -11,7 +11,7 @@ export function Component() {
 	useEffect(() => {
 		const createFile = async () => {
 			if (!app) {
-				navigate(routes.tlaRoot(), { replace: true })
+				navigate(routes.landingPage(), { replace: true })
 				return
 			}
 			const res = await app.createFile()
@@ -20,7 +20,7 @@ export function Component() {
 				navigate(routes.tlaFile(fileId), { replace: true })
 				trackEvent('create-file', { source: 'new-page' })
 			} else {
-				navigate(routes.tlaRoot(), { replace: true })
+				navigate(routes.landingPage(), { replace: true })
 			}
 		}
 		createFile()

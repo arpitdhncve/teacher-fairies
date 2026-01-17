@@ -80,7 +80,7 @@ export function TlaFairyInviteDialog({
 									title: alreadyHasAccessMsg,
 								})
 							} else {
-								window.location.href = routes.tlaRoot()
+								window.location.href = routes.landingPage()
 							}
 						} catch (err) {
 							onClose()

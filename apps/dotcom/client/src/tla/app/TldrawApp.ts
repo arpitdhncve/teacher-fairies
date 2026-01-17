@@ -1204,7 +1204,7 @@ export class TldrawApp {
 				title: 'Error accepting invite',
 				description: payload.message,
 			})
-			this.navigate(routes.tlaRoot())
+			this.navigate(routes.landingPage())
 			return
 		}
 
@@ -1224,7 +1224,7 @@ export class TldrawApp {
 		this.lastGroupFileOrderings.delete(payload.groupId)
 		const files = this.getGroupFilesSorted(payload.groupId)
 		if (!files.length) {
-			this.navigate(routes.tlaRoot())
+			this.navigate(routes.landingPage())
 			return
 		}
 		this.navigate(routes.tlaFile(files[0]!.fileId))
