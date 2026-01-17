@@ -26,6 +26,12 @@ export const updateLearningProgressHandler = async (
 ) => {
   const { userId, createSource, lastLearned }: UpdateLearningProgressRequest = req.body;
 
+  console.log("[updateLearningProgressHandler] Received request:", {
+    userId,
+    createSource,
+    lastLearned,
+  });
+
   // Validate required fields
   if (!userId || !createSource) {
     return res.status(400).json({

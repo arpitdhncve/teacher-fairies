@@ -63,7 +63,8 @@ export class AfterEveryBatchStrategy implements IReviewStrategy {
 		const cleanupTask = CleanupTaskFactory.createCleanupTask(
 			project,
 			followerAgent,
-			leaderAgent.fairyApp
+			leaderAgent.fairyApp,
+			followerAgent
 		)
 
 		if (!cleanupTask) {

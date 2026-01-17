@@ -26,6 +26,7 @@ export interface FairyTask extends BaseTaskDefinition {
 	assignedTo: AgentId | null
 	status: FairyTaskStatus
 	pageId?: string
+	completedAt?: number // Timestamp when task was marked done
 }
 
 export type FairyTaskStatus = 'todo' | 'in-progress' | 'done'

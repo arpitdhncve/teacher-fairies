@@ -5,25 +5,33 @@ import { FairyApp } from '../fairy-app/FairyApp'
 
 export class CleanupTaskFactory {
 	/**
-	 * Creates a cleanup task with hardcoded objectives
-	 * Returns null if no tasks to cleanup
+	 * Creates a cleanup task with context about what tasks need review.
+	 * Uses canvas viewport bounds for consistent SafeMinX/SafeMaxX.
+	 * Returns null if no unreviewed tasks to cleanup.
 	 */
 	static createCleanupTask(
 		project: FairyProject,
 		assignee: FairyAgent,
-		fairyApp: FairyApp
+		fairyApp: FairyApp,
+		followerAgent: FairyAgent
 	): FairyTask | null {
-		const completedTasks = fairyApp.tasks
-			.getTasksByProjectId(project.id)
-			.filter((task) => task.status === 'done')
+		// Get tasks completed since last review
+		const unreviewedTasks = fairyApp.tasks.getUnreviewedCompletedTasks(
+			project.id,
+			project.lastBatchReviewedAt ?? null
+		)
 
-		if (completedTasks.length === 0) return null
-
-		// Calculate FIXED bounds from completed tasks
-		const bounds = this.calculateBounds(completedTasks)
+		// Use canvas viewport bounds (consistent SafeMinX/SafeMaxX)
+		const viewportBounds = followerAgent.editor.getViewportPageBounds()
+		const bounds = {
+			x: Math.round(viewportBounds.x),
+			y: Math.round(viewportBounds.y),
+			w: Math.round(viewportBounds.w),
+			h: Math.round(viewportBounds.h),
+		}
 
 		const taskId = uniqueId()
-		const prompt = this.buildCleanupPrompt(bounds)
+		const prompt = this.buildCleanupPrompt(bounds, unreviewedTasks)
 
 		// Create the task in the system
 		fairyApp.tasks.createTask({
@@ -40,22 +48,23 @@ export class CleanupTaskFactory {
 		return fairyApp.tasks.getTaskById(taskId as any)!
 	}
 
-	private static calculateBounds(tasks: FairyTask[]) {
-		const minX = Math.min(...tasks.map((t) => t.x))
-		const minY = Math.min(...tasks.map((t) => t.y))
-		const maxX = Math.max(...tasks.map((t) => t.x + t.w))
-		const maxY = Math.max(...tasks.map((t) => t.y + t.h))
-
-		return { x: minX, y: minY, w: maxX - minX, h: maxY - minY }
-	}
-
-	private static buildCleanupPrompt(bounds: { x: number; y: number; w: number; h: number }) {
+	private static buildCleanupPrompt(
+		bounds: { x: number; y: number; w: number; h: number },
+		tasks: FairyTask[]
+	) {
 		const { x, y, w, h } = bounds
 		const maxX = x + w
 		const maxY = y + h
 
-		return `FINAL CLEANUP TASK - DO NOT CREATE NEW CONTENT
+		// Build context about what tasks were done
+		const taskContext = tasks.length > 0
+			? `\nTasks completed since last review:\n${tasks.map(t => 
+				`- "${t.title}"${t.text ? `: ${t.text}` : ''}`
+			  ).join('\n')}\n`
+			: ''
 
+		return `FINAL CLEANUP TASK - DO NOT CREATE NEW CONTENT
+${taskContext}
 Review and fix issues in the work area:
 1. REMOVE overlapping text - delete one if two elements overlap
 2. ENSURE shapes within bounds x=[${x}, ${maxX}]

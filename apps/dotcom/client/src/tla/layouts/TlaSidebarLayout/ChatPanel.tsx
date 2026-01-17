@@ -1110,7 +1110,7 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 			}
 
 			setLkToken(tokenToUse)
-			setLkUrl('wss://project-123-tjsvjjwb.livekit.cloud')
+			setLkUrl('wss://test-123-40u8an9w.livekit.cloud')
 			setLkConnect(true)
 		} catch {
 			setError('Failed to start learning session')

@@ -16,21 +16,26 @@ interface GetLearningProgressParams {
   createSource: string;
 }
 
-/**
- * Update the lastLearned field for a file identified by ownerId and createSource
- */
 export const updateLearningProgress = async ({
   userId,
   createSource,
   lastLearned,
 }: UpdateLearningProgressParams): Promise<boolean> => {
   try {
+    console.log("[learningProgressService] Updating with params:", {
+      userId,
+      createSource,
+      lastLearned,
+    });
+
     const result = await pool.query(
       `UPDATE file 
        SET "lastLearned" = $1
-       WHERE "ownerId" = $2 AND "createSource" = $3`,
+       WHERE "owningGroupId" = $2 AND "createSource" = $3`,
       [JSON.stringify(lastLearned), userId, createSource]
     );
+
+    console.log("[learningProgressService] Update result rowCount:", result.rowCount);
 
     return (result.rowCount ?? 0) > 0;
   } catch (error) {
@@ -39,9 +44,6 @@ export const updateLearningProgress = async ({
   }
 };
 
-/**
- * Get the lastLearned field for a file identified by ownerId and createSource
- */
 export const getLearningProgress = async ({
   userId,
   createSource,
@@ -49,7 +51,7 @@ export const getLearningProgress = async ({
   try {
     const result = await pool.query(
       `SELECT "lastLearned" FROM file 
-       WHERE "ownerId" = $1 AND "createSource" = $2`,
+       WHERE "owningGroupId" = $1 AND "createSource" = $2`,
       [userId, createSource]
     );
 

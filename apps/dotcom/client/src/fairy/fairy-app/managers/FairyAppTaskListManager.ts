@@ -96,7 +96,14 @@ export class FairyAppTaskListManager extends BaseFairyAppManager {
 	 * Set a task's status.
 	 */
 	setTaskStatus(id: TaskId, status: FairyTaskStatus) {
-		this.$tasks.update((tasks) => tasks.map((t) => (t.id === id ? { ...t, status } : t)))
+		this.$tasks.update((tasks) => tasks.map((t) => {
+			if (t.id !== id) return t
+			const updates: Partial<FairyTask> = { status }
+			if (status === 'done' && !t.completedAt) {
+				updates.completedAt = Date.now()
+			}
+			return { ...t, ...updates }
+		}))
 	}
 
 	/**
@@ -139,6 +146,19 @@ export class FairyAppTaskListManager extends BaseFairyAppManager {
 			return []
 		}
 		return this.$tasks.get().filter((t) => t.projectId === projectId)
+	}
+
+	/**
+	 * Get completed tasks that haven't been reviewed yet.
+	 * @param projectId - Project to filter by
+	 * @param lastReviewedAt - Timestamp of last review (tasks completed after this are unreviewed)
+	 */
+	getUnreviewedCompletedTasks(projectId: ProjectId, lastReviewedAt: number | null): FairyTask[] {
+		return this.getTasksByProjectId(projectId).filter((task) => {
+			if (task.status !== 'done') return false
+			if (!lastReviewedAt) return true // No review yet = all completed are unreviewed
+			return (task.completedAt ?? 0) > lastReviewedAt
+		})
 	}
 
 	/**
