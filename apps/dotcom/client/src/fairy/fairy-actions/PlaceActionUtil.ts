@@ -94,6 +94,12 @@ export class PlaceActionUtil extends AgentActionUtil<PlaceAction> {
 			y,
 		})
 
-		this.agent.position.moveTo({ x, y })
+		// Move fairy to bottom-right of placed shape
+		const placedBounds = editor.getShapePageBounds(shapeId)
+		if (placedBounds) {
+			this.agent.position.moveTo({ x: placedBounds.maxX, y: placedBounds.maxY })
+		} else {
+			this.agent.position.moveTo({ x, y })
+		}
 	}
 }

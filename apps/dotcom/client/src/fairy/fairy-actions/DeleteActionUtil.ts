@@ -33,7 +33,14 @@ export class DeleteActionUtil extends AgentActionUtil<DeleteAction> {
 		const shape = this.agent.editor.getShape(shapeId)
 		if (!shape) return
 
+		// Get bounds before deletion to position fairy at bottom-right
+		const shapeBounds = this.agent.editor.getShapePageBounds(shapeId)
 		this.agent.editor.deleteShape(shapeId)
-		this.agent.position.moveTo({ x: shape.x, y: shape.y })
+		
+		if (shapeBounds) {
+			this.agent.position.moveTo({ x: shapeBounds.maxX, y: shapeBounds.maxY })
+		} else {
+			this.agent.position.moveTo({ x: shape.x, y: shape.y })
+		}
 	}
 }

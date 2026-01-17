@@ -83,6 +83,14 @@ export class FairyAppFollowingManager extends BaseFairyAppManager {
 				return
 			}
 
+			// Stop following if fairy is in thinking pose or standing-by mode
+			const fairyPose = fairyEntity.pose
+			const fairyMode = currentAgent.mode.getMode()
+			if (fairyPose === 'thinking' || fairyMode === 'standing-by') {
+				this.stopFollowing()
+				return
+			}
+
 			// Only react when position or page actually changes
 			const { x, y } = fairyEntity.position
 			const pageId = fairyEntity.currentPageId

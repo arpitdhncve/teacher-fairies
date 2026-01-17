@@ -62,9 +62,18 @@ export class LabelActionUtil extends AgentActionUtil<LabelAction> {
 			props: { richText: toRichText(action.text ?? '') },
 		})
 
-		this.agent.position.moveTo({
-			x: shape.x,
-			y: shape.y,
-		})
+		// Move fairy to bottom-right of shape after labeling
+		const shapeBounds = editor.getShapePageBounds(shapeId)
+		if (shapeBounds) {
+			this.agent.position.moveTo({
+				x: shapeBounds.maxX,
+				y: shapeBounds.maxY,
+			})
+		} else {
+			this.agent.position.moveTo({
+				x: shape.x,
+				y: shape.y,
+			})
+		}
 	}
 }

@@ -75,10 +75,21 @@ export class CreateActionUtil extends AgentActionUtil<CreateAction> {
 			}
 		}
 
-		this.agent.position.moveTo({
-			x: result.shape.x,
-			y: result.shape.y,
-		})
+		// Move fairy to bottom-right of created shape so camera follows the work area
+		const createdShapeId = result.shape.id
+		const shapeBounds = editor.getShapePageBounds(createdShapeId)
+		if (shapeBounds) {
+			this.agent.position.moveTo({
+				x: shapeBounds.maxX,
+				y: shapeBounds.maxY,
+			})
+		} else {
+			// Fallback to top-left if bounds not available
+			this.agent.position.moveTo({
+				x: result.shape.x,
+				y: result.shape.y,
+			})
+		}
 	}
 }
 

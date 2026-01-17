@@ -124,9 +124,18 @@ export class MoveActionUtil extends AgentActionUtil<MoveAction> {
 			y: newTarget.y,
 		})
 
-		this.agent.position.moveTo({
-			x: newTarget.x,
-			y: newTarget.y,
-		})
+		// Move fairy to bottom-right of moved shape
+		const movedBounds = editor.getShapePageBounds(shapeId)
+		if (movedBounds) {
+			this.agent.position.moveTo({
+				x: movedBounds.maxX,
+				y: movedBounds.maxY,
+			})
+		} else {
+			this.agent.position.moveTo({
+				x: newTarget.x,
+				y: newTarget.y,
+			})
+		}
 	}
 }

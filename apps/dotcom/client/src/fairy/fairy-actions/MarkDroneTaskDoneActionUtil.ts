@@ -12,6 +12,26 @@ import { ReviewStrategyExecutor } from '../fairy-review/ReviewStrategyExecutor'
 export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDoneAction> {
 	static override type = 'mark-my-task-done' as const
 
+	/**
+	 * Move fairy to the center of the given tasks' combined bounds.
+	 * This keeps the camera focused on the work area when fairy enters idle state.
+	 */
+	private moveToTaskCenter(tasks: Array<{ x: number; y: number; w: number; h: number }>) {
+		if (tasks.length === 0) return
+		
+		// Calculate bounding box of all tasks
+		const minX = Math.min(...tasks.map(t => t.x))
+		const minY = Math.min(...tasks.map(t => t.y))
+		const maxX = Math.max(...tasks.map(t => t.x + t.w))
+		const maxY = Math.max(...tasks.map(t => t.y + t.h))
+		
+		// Move to center of combined bounds
+		this.agent.position.moveTo({
+			x: (minX + maxX) / 2,
+			y: (minY + maxY) / 2,
+		})
+	}
+
 	override getInfo(action: Streaming<MarkDroneTaskDoneAction>) {
 		const currentWork = this.agent.getWork()
 		const inProgressTasks = currentWork.tasks.filter((task) => task.status === 'in-progress')
@@ -80,6 +100,8 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 					if (remainingTodoTasks.length === 0) {
 						// No more TODO tasks - wake the leader to assess and continue
 						console.log('[MarkTaskDone] Cleanup complete, no TODO tasks remaining - waking leader')
+						// Move fairy to center of completed tasks before going idle
+						this.moveToTaskCenter(inProgressTasks)
 						this.agent.interrupt({ mode: 'standing-by', input: null })
 						
 						if (leaderAgent.mode.getMode() === 'duo-orchestrating-waiting') {
@@ -124,6 +146,8 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 
 		const proj = this.agent.getProject()
 		if (!proj) {
+			// Move fairy to center of completed tasks before going idle
+			this.moveToTaskCenter(inProgressTasks)
 			this.agent.interrupt({ mode: 'standing-by', input: null })
 			return
 		}
@@ -184,6 +208,8 @@ export class MarkDroneTaskDoneActionUtil extends AgentActionUtil<MarkDroneTaskDo
 		}
 
 		// No more tasks - go to standing-by and wake leader
+		// Move fairy to center of completed tasks before going idle
+		this.moveToTaskCenter(inProgressTasks)
 		this.agent.interrupt({ mode: 'standing-by', input: null })
 
 		// Wake up the leader (duo-orchestrating-waiting) - reuse leaderMember from above

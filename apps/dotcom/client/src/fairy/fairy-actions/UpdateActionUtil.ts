@@ -67,10 +67,19 @@ export class UpdateActionUtil extends AgentActionUtil<UpdateAction> {
 		})
 
 		if (!result.shape) {
-			this.agent.position.moveTo({
-				x: existingShape.x,
-				y: existingShape.y,
-			})
+			// Move to bottom-right of shape even on failure
+			const failBounds = editor.getShapePageBounds(shapeId)
+			if (failBounds) {
+				this.agent.position.moveTo({
+					x: failBounds.maxX,
+					y: failBounds.maxY,
+				})
+			} else {
+				this.agent.position.moveTo({
+					x: existingShape.x,
+					y: existingShape.y,
+				})
+			}
 			this.agent.schedule({ data: [`Updating shape ${shapeId} failed.`] })
 			return
 		}
@@ -97,9 +106,18 @@ export class UpdateActionUtil extends AgentActionUtil<UpdateAction> {
 			}
 		}
 
-		this.agent.position.moveTo({
-			x: result.shape.x,
-			y: result.shape.y,
-		})
+		// Move fairy to bottom-right of updated shape
+		const updatedBounds = editor.getShapePageBounds(result.shape.id)
+		if (updatedBounds) {
+			this.agent.position.moveTo({
+				x: updatedBounds.maxX,
+				y: updatedBounds.maxY,
+			})
+		} else {
+			this.agent.position.moveTo({
+				x: result.shape.x,
+				y: result.shape.y,
+			})
+		}
 	}
 }
