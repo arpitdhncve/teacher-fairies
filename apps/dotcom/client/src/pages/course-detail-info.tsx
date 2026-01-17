@@ -23,6 +23,8 @@ import './styles/course-variables.module.css' // Load variables
 import oldStyles from './course-detail-info.module.css'
 import { TimeLeft } from '../components/TimeLeft'
 import { LoginRequiredDialog } from './components/LoginRequiredDialog'
+import { SessionActiveDialog } from './components/SessionActiveDialog'
+import { checkLearnspaceStatus } from '../utils/learningSessionChannel'
 
 type TabType = 'curriculum' | 'pricing'
 
@@ -218,9 +220,10 @@ function CurriculumSection({
 	isSignedIn: boolean
 }) {
 	const [showLoginDialog, setShowLoginDialog] = useState(false)
+	const [showSessionActiveDialog, setShowSessionActiveDialog] = useState(false)
 
 	// Handler for learning material clicks (concepts and case studies)
-	const handleLearningMaterialClick = (
+	const handleLearningMaterialClick = async (
 		type: 'concept' | 'case_study',
 		id: string,
 		url: string
@@ -232,8 +235,24 @@ function CurriculumSection({
 
 		// Build the createSource for file lookup/creation
 		const createSource = `${type}_${id}`
-		// Navigate to the file creation/lookup page with params
-		window.open(`/q/learning?createSource=${encodeURIComponent(createSource)}&url=${encodeURIComponent(url)}`, '_blank')
+		const learningUrl = `/q/learning?createSource=${encodeURIComponent(createSource)}&url=${encodeURIComponent(url)}`
+
+		// Check if a learnspace is already open AND actively learning
+		const status = await checkLearnspaceStatus()
+		console.log('[CourseDetail] Learnspace status:', status)
+
+		if (status.exists && status.isLearning) {
+			// Active learning session - block with error
+			console.log('[CourseDetail] Blocking - active learning session')
+			setShowSessionActiveDialog(true)
+		} else {
+			// Either no learnspace or learnspace not learning
+			// Use named window - this will:
+			// 1. If window 'eazit_learnspace' exists → navigate it AND focus it
+			// 2. If not → create new window with that name
+			console.log('[CourseDetail] Opening/navigating learnspace via named window')
+			window.open(learningUrl, 'eazit_learnspace')
+		}
 	}
 	// Fallback values if course data is not yet loaded
 	const title = course?.name || 'Scalable Architectures'
@@ -318,6 +337,11 @@ function CurriculumSection({
 			{/* Login Required Dialog */}
 			{showLoginDialog && (
 				<LoginRequiredDialog onClose={() => setShowLoginDialog(false)} />
+			)}
+
+			{/* Session Active Dialog */}
+			{showSessionActiveDialog && (
+				<SessionActiveDialog onClose={() => setShowSessionActiveDialog(false)} />
 			)}
 		</div>
 	)

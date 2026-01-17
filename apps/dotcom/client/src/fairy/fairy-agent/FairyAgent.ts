@@ -1050,13 +1050,24 @@ export class FairyAgent {
 		console.log('🔄 Starting canvas snapshot process...')
 		const { editor } = this
 
-		const viewportBounds = editor.getViewportPageBounds()
-		const maxXValue = viewportBounds ? viewportBounds.x + viewportBounds.w : 0
-		const maxYValue = viewportBounds ? viewportBounds.y + viewportBounds.h : 0
-
 		const currentPageId = editor.getCurrentPageId()
 		const shapeIds = Array.from(editor.getCurrentPageShapeIds())
 		const shapes = editor.getCurrentPageShapes()
+
+		// Calculate content bounds from all shapes (not viewport)
+		// This ensures we capture where actual drawings are, regardless of scroll position
+		const shapeBounds = shapes
+			.map((s) => editor.getShapePageBounds(s))
+			.filter((b): b is Box => b !== null)
+
+		let contentBounds: Box | null = null
+		if (shapeBounds.length > 0) {
+			contentBounds = Box.Common(shapeBounds)
+		}
+
+		// Use content bounds for max values (where drawings actually are)
+		const maxXValue = contentBounds ? contentBounds.maxX : 0
+		const maxYValue = contentBounds ? contentBounds.maxY : 0
 
 		const helpers = new AgentHelpers(this)
 
@@ -1073,14 +1084,14 @@ export class FairyAgent {
 		let imageDataUrl: string | null = null
 
 		if (shapeIds.length > 0) {
-			const viewportBounds = editor.getViewportPageBounds()
 			try {
+				// Capture ALL shapes without viewport bounds constraint
+				// This ensures the full canvas content is captured regardless of scroll position
 				const { blob } = await editor.toImage(shapeIds, {
 					format: 'png',
 					background: true,
 					scale: 2,
-					padding: 0,
-					...(viewportBounds ? { bounds: viewportBounds } : {}),
+					padding: 20,
 				})
 
 				imageDataUrl = await new Promise<string>((resolve, reject) => {
@@ -1214,7 +1225,30 @@ export class FairyAgent {
 		// Set follower as standing by
 		follower.interrupt({ mode: 'standing-by', input: null })
 
-		// Move follower to the leader
+		// Calculate the optimal starting position based on existing content
+		// This ensures fairies start near where new drawings should happen
+		const shapes = this.editor.getCurrentPageShapes()
+		const shapeBounds = shapes
+			.map((s) => this.editor.getShapePageBounds(s))
+			.filter((b): b is Box => b !== null)
+
+		let startPosition: { x: number; y: number }
+		if (shapeBounds.length > 0) {
+			// Position below existing content so new drawings don't overlap
+			const contentBounds = Box.Common(shapeBounds)
+			startPosition = {
+				x: contentBounds.x + contentBounds.w / 2, // Center X of content
+				y: contentBounds.maxY + 100, // Below existing content with some padding
+			}
+		} else {
+			// No content yet, use viewport center
+			startPosition = this.editor.getViewportPageBounds().center
+		}
+
+		// Move leader to the calculated starting position (near where work will happen)
+		this.position.moveTo(startPosition)
+
+		// Move follower relative to the leader
 		const leaderPosition = this.getEntity().position
 		const leaderPageId = this.getEntity().currentPageId
 		const offset = 120

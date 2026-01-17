@@ -9,6 +9,7 @@ import { useMaybeApp } from '../../hooks/useAppState'
 import { useCurrentFileId } from '../../hooks/useCurrentFileId'
 import { useViewportContext } from '../../hooks/useViewportContext'
 import { clearLocalSessionState } from '../../utils/local-session-state'
+import { createLearnspaceListener } from '../../../utils/learningSessionChannel'
 import { TlaCtaButton } from '../../components/TlaCtaButton/TlaCtaButton'
 import { TlaIcon } from '../../components/TlaIcon/TlaIcon'
 
@@ -973,6 +974,7 @@ function DataHandler({
 }
 
 export function ChatPanel({ agent }: { agent?: FairyAgent }) {
+	const navigate = useNavigate()
 	const auth = useAuth()
 	const app = useMaybeApp()
 	const currentFileId = useCurrentFileId()
@@ -1163,6 +1165,20 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 		
 		// Note: No navigation - user stays on the same page
 	}, [agent])
+
+	// Listen for cross-tab session check requests and navigation
+	useEffect(() => {
+		const cleanup = createLearnspaceListener({
+			isLearning: () => lkConnect,
+			onNavigate: (createSource, url) => {
+				// Store URL in localStorage for later retrieval by startLearningSession
+				localStorage.setItem(`learning_material_url:lf/${createSource}`, url)
+				// Navigate to the new learning material
+				navigate(`/q/learning?createSource=${encodeURIComponent(createSource)}&url=${encodeURIComponent(url)}`)
+			},
+		})
+		return cleanup
+	}, [lkConnect, navigate])
 
 	// Show loading state if agent is not available yet
 	if (!agent) {
