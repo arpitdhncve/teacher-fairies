@@ -17,6 +17,7 @@ import {
 } from 'tldraw'
 import { useClerk } from '@clerk/clerk-react'
 import { routes } from '../../../routeDefs'
+import { broadcastUserLoggedIn } from '../../../utils/learningSessionChannel'
 import { useMaybeApp } from '../../hooks/useAppState'
 import { useCurrentFileId } from '../../hooks/useCurrentFileId'
 import { useTldrawAppUiEvents } from '../../utils/app-ui-events'
@@ -59,6 +60,8 @@ export function TlaEditorTopRightPanel({
 							source: 'anon-landing-page',
 							ctaMessage: ctaString,
 						})
+						// Broadcast to other tabs that user is logging in
+						broadcastUserLoggedIn()
 						client.signIn.authenticateWithRedirect({
 							strategy: 'oauth_google',
 							redirectUrl: '/sso-callback',

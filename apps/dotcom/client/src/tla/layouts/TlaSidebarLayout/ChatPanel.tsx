@@ -9,7 +9,7 @@ import { useMaybeApp } from '../../hooks/useAppState'
 import { useCurrentFileId } from '../../hooks/useCurrentFileId'
 import { useViewportContext } from '../../hooks/useViewportContext'
 import { clearLocalSessionState } from '../../utils/local-session-state'
-import { createLearnspaceListener } from '../../../utils/learningSessionChannel'
+import { createLearnspaceListener, listenForLogin, broadcastUserLoggedIn } from '../../../utils/learningSessionChannel'
 import { TlaCtaButton } from '../../components/TlaCtaButton/TlaCtaButton'
 import { TlaIcon } from '../../components/TlaIcon/TlaIcon'
 
@@ -249,11 +249,12 @@ function MicPushToTalk({ hotkey = 'Space' }: { hotkey?: string }) {
 						fontWeight: 500,
 						color: 'rgba(255,255,255,0.5)',
 						letterSpacing: '0.02em',
+						whiteSpace: 'nowrap',
 					}}
 				>
 					Hold{' '}
 					<span style={{ position: 'relative', color: '#fff', fontWeight: 600 }}>
-						Spacebar
+						spacebar
 						<svg
 							viewBox="0 0 70 8"
 							fill="none"
@@ -275,7 +276,7 @@ function MicPushToTalk({ hotkey = 'Space' }: { hotkey?: string }) {
 							/>
 						</svg>
 					</span>{' '}
-					to speak
+					and speak
 				</div>
 			</div>
 
@@ -1180,6 +1181,23 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 		return cleanup
 	}, [lkConnect, navigate])
 
+	// Listen for cross-tab login and close/redirect this anonymous tab
+	useEffect(() => {
+		// Only listen if user is not signed in (anonymous user)
+		if (auth.isSignedIn) return
+
+		const cleanup = listenForLogin(() => {
+			console.log('[ChatPanel] Detected login from another tab, closing/redirecting...')
+			// Try to close this tab
+			window.close()
+			// If window.close() didn't work (browser blocked it), redirect instead
+			setTimeout(() => {
+				navigate('/course-detail-info?tab=curriculum', { replace: true })
+			}, 100)
+		})
+		return cleanup
+	}, [auth.isSignedIn, navigate])
+
 	// Show loading state if agent is not available yet
 	if (!agent) {
 		return (
@@ -1367,8 +1385,12 @@ function ChatControls({
 				<StartLearningButton onClick={onStartLearning} />
 			)}
 			{/* For non-logged-in users: show small stop button when connected */}
+			{/* For non-logged-in users: show small stop button + Sign In with Google when connected */}
 			{!isSignedIn && lkConnect && (
-				<SmallStopButton onClick={onStopLearning} />
+				<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+					<SmallStopButton onClick={onStopLearning} />
+					<GoogleSignInButton />
+				</div>
 			)}
 			{/* For logged-in users: show Stop Learning button when connected */}
 			{isSignedIn && lkConnect && (
@@ -1480,10 +1502,12 @@ function GoogleSignInButton() {
 	const { client } = useClerk()
 
 	const handleGoogleSignIn = useCallback(() => {
+		// Broadcast to other tabs that user is logging in
+		broadcastUserLoggedIn()
 		client.signIn.authenticateWithRedirect({
 			strategy: 'oauth_google',
 			redirectUrl: '/sso-callback',
-			redirectUrlComplete: window.location.pathname,
+			redirectUrlComplete: '/course-detail-info',
 		})
 	}, [client])
 

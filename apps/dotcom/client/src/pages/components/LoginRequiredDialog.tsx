@@ -1,4 +1,5 @@
 import { useClerk } from '@clerk/clerk-react'
+import { broadcastUserLoggedIn } from '../../utils/learningSessionChannel'
 
 interface LoginRequiredDialogProps {
 	onClose: () => void
@@ -8,6 +9,8 @@ export function LoginRequiredDialog({ onClose }: LoginRequiredDialogProps) {
 	const { client } = useClerk()
 
 	const handleLogin = () => {
+		// Broadcast to other tabs that user is logging in
+		broadcastUserLoggedIn()
 		client.signIn.authenticateWithRedirect({
 			strategy: 'oauth_google',
 			redirectUrl: '/sso-callback',

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@clerk/clerk-react'
 import { getAnonymousUserId } from '../utils/anonymousUserId'
+import { listenForLogin } from '../utils/learningSessionChannel'
 
 /**
  * Landing page component that creates an anonymous file and redirects to it.
@@ -15,6 +16,21 @@ export function Component() {
 	const navigate = useNavigate()
 	const [error, setError] = useState<string | null>(null)
 	const { userId } = useAuth()
+
+	// Listen for cross-tab login and close/redirect this anonymous tab
+	useEffect(() => {
+		const cleanup = listenForLogin(() => {
+			console.log('[Anonymous] Detected login from another tab, closing/redirecting...')
+			// Try to close this tab
+			window.close()
+			// If window.close() didn't work (browser blocked it), redirect instead
+			// We use a small timeout to allow close() to execute if it can
+			setTimeout(() => {
+				navigate('/course-detail-info?tab=curriculum', { replace: true })
+			}, 100)
+		})
+		return cleanup
+	}, [navigate])
 
 	useEffect(() => {
 		const createAndRedirect = async () => {

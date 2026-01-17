@@ -24,7 +24,7 @@ import oldStyles from './course-detail-info.module.css'
 import { TimeLeft } from '../components/TimeLeft'
 import { LoginRequiredDialog } from './components/LoginRequiredDialog'
 import { SessionActiveDialog } from './components/SessionActiveDialog'
-import { checkLearnspaceStatus } from '../utils/learningSessionChannel'
+import { checkLearnspaceStatus, broadcastUserLoggedIn } from '../utils/learningSessionChannel'
 
 type TabType = 'curriculum' | 'pricing'
 
@@ -95,6 +95,8 @@ export function Component() {
 	}
 
 	const openLoginDialog = () => {
+		// Broadcast to other tabs that user is logging in
+		broadcastUserLoggedIn()
 		client.signIn.authenticateWithRedirect({
 			strategy: 'oauth_google',
 			redirectUrl: '/sso-callback',
@@ -518,6 +520,8 @@ function PricingSection() {
 	const { isSignedIn } = useUser()
 
 	const handleTryFree = () => {
+		// Broadcast to other tabs that user is logging in
+		broadcastUserLoggedIn()
 		client.signIn.authenticateWithRedirect({
 			strategy: 'oauth_google',
 			redirectUrl: '/sso-callback',

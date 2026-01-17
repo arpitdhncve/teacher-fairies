@@ -1,4 +1,5 @@
 import { useClerk } from '@clerk/clerk-react'
+import { broadcastUserLoggedIn } from '../../../utils/learningSessionChannel'
 import classNames from 'classnames'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -400,6 +401,8 @@ function SignInMenuItem() {
 	const { client } = useClerk()
 
 	const handleGoogleSignIn = useCallback(() => {
+		// Broadcast to other tabs that user is logging in
+		broadcastUserLoggedIn()
 		client.signIn.authenticateWithRedirect({
 			strategy: 'oauth_google',
 			redirectUrl: '/sso-callback',

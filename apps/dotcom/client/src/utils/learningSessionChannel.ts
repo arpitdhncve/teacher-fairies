@@ -95,3 +95,39 @@ export function createLearnspaceListener(callbacks: {
 		channel.close()
 	}
 }
+
+// ============ Cross-Tab Login Detection ============
+
+const AUTH_CHANNEL_NAME = 'auth_session_channel'
+
+type UserLoggedInMessage = { type: 'user_logged_in' }
+type AuthChannelMessage = UserLoggedInMessage
+
+/**
+ * Broadcast that user has logged in.
+ * Call this before initiating OAuth redirect.
+ */
+export function broadcastUserLoggedIn(): void {
+	const channel = new BroadcastChannel(AUTH_CHANNEL_NAME)
+	channel.postMessage({ type: 'user_logged_in' } as UserLoggedInMessage)
+	// Close after a brief delay to ensure message is sent
+	setTimeout(() => channel.close(), 50)
+}
+
+/**
+ * Listen for login events from other tabs.
+ * Returns a cleanup function.
+ */
+export function listenForLogin(onLogin: () => void): () => void {
+	const channel = new BroadcastChannel(AUTH_CHANNEL_NAME)
+
+	channel.onmessage = (event: MessageEvent<AuthChannelMessage>) => {
+		if (event.data.type === 'user_logged_in') {
+			onLogin()
+		}
+	}
+
+	return () => {
+		channel.close()
+	}
+}
