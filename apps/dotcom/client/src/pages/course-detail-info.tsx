@@ -112,8 +112,8 @@ export function Component() {
 						</Link>
 					</div>
 
-					{/* Center - Navigation Tabs */}
-					<div className={headerStyles.tabNavContainer}>
+					{/* Center - Navigation Tabs (commented out for now) */}
+					{/* <div className={headerStyles.tabNavContainer}>
 						<nav className={headerStyles.tabNav}>
 							<button
 								className={`${headerStyles.tab} ${activeTab === 'curriculum' ? headerStyles.activeTab : ''}`}
@@ -128,7 +128,7 @@ export function Component() {
 								Pricing
 							</button>
 						</nav>
-					</div>
+					</div> */}
 
 					{/* Right - CTA */}
 					<div className={headerStyles.ctaGroup}>
@@ -158,7 +158,7 @@ export function Component() {
 							</div>
 						) : (
 							<div className={headerStyles.spotlightBadge} onClick={openLoginDialog}>
-								<GoogleIcon className={headerStyles.sparkleIcon} /> Enroll Now · 1 Hour Free
+								<GoogleIcon className={headerStyles.sparkleIcon} /> Enroll Now
 							</div>
 						)}
 					</div>
@@ -168,18 +168,17 @@ export function Component() {
 			{/* Main Content */}
 			<main className={oldStyles.main}>
 				<div className={oldStyles.container}>
-					{/* Content Area */}
+					{/* Content Area - Always show curriculum (pricing toggle commented out) */}
 					<div>
-						{activeTab === 'curriculum' ? (
 						<CurriculumSection
 							expandedModules={expandedModules}
 							toggleModule={toggleModule}
 							course={course}
 							isSignedIn={isSignedIn ?? false}
 						/>
-					) : (
-							<PricingSection />
-						)}
+						{/* Pricing section (commented out for now)
+						{activeTab === 'pricing' && <PricingSection />}
+						*/}
 					</div>
 				</div>
 			</main>
@@ -432,7 +431,6 @@ function ConceptCard({
 					<button
 						onClick={() => onLearningMaterialClick('concept', concept.id, concept.conceptUrl!)}
 						className={curriculumStyles.readButton}
-						style={{ cursor: 'pointer', border: 'none', background: 'inherit' }}
 					>
 						Learn Concept
 					</button>

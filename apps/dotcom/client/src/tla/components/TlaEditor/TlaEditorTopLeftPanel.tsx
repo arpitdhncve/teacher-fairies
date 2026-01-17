@@ -1,3 +1,4 @@
+import { useClerk } from '@clerk/clerk-react'
 import classNames from 'classnames'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -33,7 +34,6 @@ import { FileItems, TlaFileMenu } from '../TlaFileMenu/TlaFileMenu'
 import { TlaIcon } from '../TlaIcon/TlaIcon'
 import { TlaLogo } from '../TlaLogo/TlaLogo'
 import { sidebarMessages } from '../TlaSidebar/components/TlaSidebarFileLink'
-import { TlaSignInDialog } from '../dialogs/TlaSignInDialog'
 import {
 	CookieConsentMenuItem,
 	GiveUsFeedbackMenuItem,
@@ -397,18 +397,24 @@ function TlaFileNameEditorInput({
 
 function SignInMenuItem() {
 	const msg = useMsg(messages.signIn)
-	const { addDialog } = useDialogs()
+	const { client } = useClerk()
+
+	const handleGoogleSignIn = useCallback(() => {
+		client.signIn.authenticateWithRedirect({
+			strategy: 'oauth_google',
+			redirectUrl: '/sso-callback',
+			redirectUrlComplete: window.location.pathname,
+		})
+	}, [client])
 
 	return (
 		<TldrawUiButton
 			type="menu"
 			data-testid="tla-sign-in-menu-button"
-			onClick={() => {
-				addDialog({ component: TlaSignInDialog })
-			}}
+			onClick={handleGoogleSignIn}
 		>
 			<TldrawUiButtonLabel>{msg}</TldrawUiButtonLabel>
-			<TlaIcon icon="sign-in" />
+			<TlaIcon icon="google" />
 		</TldrawUiButton>
 	)
 }
