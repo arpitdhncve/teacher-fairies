@@ -1,5 +1,6 @@
 import { useClerk } from '@clerk/clerk-react'
 import { broadcastUserLoggedIn } from '../../utils/learningSessionChannel'
+import styles from '../styles/dialog.module.css'
 
 interface LoginRequiredDialogProps {
 	onClose: () => void
@@ -9,7 +10,6 @@ export function LoginRequiredDialog({ onClose }: LoginRequiredDialogProps) {
 	const { client } = useClerk()
 
 	const handleLogin = () => {
-		// Broadcast to other tabs that user is logging in
 		broadcastUserLoggedIn()
 		client.signIn.authenticateWithRedirect({
 			strategy: 'oauth_google',
@@ -19,101 +19,62 @@ export function LoginRequiredDialog({ onClose }: LoginRequiredDialogProps) {
 	}
 
 	return (
-		<div
-			style={{
-				position: 'fixed',
-				inset: 0,
-				background: 'rgba(0, 0, 0, 0.5)',
-				display: 'flex',
-				alignItems: 'center',
-				justifyContent: 'center',
-				zIndex: 9999,
-			}}
-			onClick={onClose}
-		>
-			<div
-				onClick={(e) => e.stopPropagation()}
-				style={{
-					background: 'linear-gradient(145deg, #1a1a2e, #16213e)',
-					borderRadius: 16,
-					padding: 32,
-					maxWidth: 400,
-					textAlign: 'center',
-					boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
-					border: '1px solid rgba(255, 255, 255, 0.1)',
-				}}
-			>
-				{/* Warning Icon */}
-				<div
-					style={{
-						fontSize: 48,
-						marginBottom: 16,
-					}}
-				>
-					⚠️
-				</div>
+		<div className={styles.overlay} onClick={onClose}>
+			<div className={styles.container} onClick={(e) => e.stopPropagation()}>
+				{/* Icon */}
+				<div className={`${styles.icon} ${styles.iconWarning}`}>🔒</div>
 
 				{/* Title */}
-				<h2
-					style={{
-						color: '#fff',
-						fontSize: 20,
-						fontWeight: 600,
-						marginBottom: 12,
-					}}
-				>
-					Login Required
-				</h2>
+				<h2 className={styles.title}>Login Required</h2>
 
 				{/* Description */}
-				<p
-					style={{
-						color: 'rgba(255, 255, 255, 0.7)',
-						fontSize: 14,
-						lineHeight: 1.6,
-						marginBottom: 24,
-					}}
-				>
-					Please login to start learning. Your progress will be saved and you can continue from where you left off.
+				<p className={styles.description}>
+					Please login to start learning. Your progress will be saved and you can continue
+					from where you left off.
 				</p>
 
 				{/* Buttons */}
-				<div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-					<button
-						onClick={onClose}
-						style={{
-							padding: '10px 20px',
-							borderRadius: 8,
-							background: 'transparent',
-							color: 'rgba(255, 255, 255, 0.7)',
-							border: '1px solid rgba(255, 255, 255, 0.2)',
-							cursor: 'pointer',
-							fontSize: 14,
-							fontWeight: 500,
-							transition: 'all 0.2s ease',
-						}}
-					>
+				<div className={styles.buttonGroup}>
+					<button className={styles.buttonSecondary} onClick={onClose}>
 						Cancel
 					</button>
-					<button
-						onClick={handleLogin}
-						style={{
-							padding: '10px 24px',
-							borderRadius: 8,
-							background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-							color: '#fff',
-							border: 'none',
-							cursor: 'pointer',
-							fontSize: 14,
-							fontWeight: 600,
-							boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)',
-							transition: 'all 0.2s ease',
-						}}
-					>
-						Login with Google
+					<button className={styles.buttonSpotlight} onClick={handleLogin}>
+						<GoogleIcon />
+						Enroll Now
 					</button>
 				</div>
 			</div>
 		</div>
+	)
+}
+
+function GoogleIcon() {
+	return (
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			viewBox="0 0 24 24"
+			width="16"
+			height="16"
+			style={{ display: 'inline-block', verticalAlign: 'middle' }}
+		>
+			<g fill="none" fillRule="evenodd">
+				<path
+					d="M20.64 12.2c0-.63-.06-1.25-.16-1.84H12v3.49h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.92c1.71-1.58 2.68-3.9 2.68-6.62z"
+					fill="#4285F4"
+				/>
+				<path
+					d="M12 21c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.81.54-1.85.86-3.05.86-2.34 0-4.32-1.58-5.03-3.71H3.85v2.33C5.33 18.97 8.48 21 12 21z"
+					fill="#34A853"
+				/>
+				<path
+					d="M6.97 13.71a5.17 5.17 0 0 1-.09-1.71c0-.59.1-1.18.28-1.71V7.96H3.85a9.2 9.2 0 0 0 0 8.08l3.12-2.33z"
+					fill="#FBBC05"
+				/>
+				<path
+					d="M12 5.38c1.32 0 2.5.45 3.44 1.35l2.58-2.59A9 9 0 0 0 3.85 7.96l3.12 2.33C7.68 7.94 9.66 6.36 12 5.38z"
+					fill="#EA4335"
+				/>
+			</g>
+		</svg>
 	)
 }

@@ -42,6 +42,28 @@
   /* Spacing */
   --space-container: 1100px;
   --header-height: 72px;
+
+  /* ========== Premium Dialog Tokens ========== */
+  --dialog-bg: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+  --dialog-border: 1px solid rgba(0, 0, 0, 0.06);
+  --dialog-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.03);
+  --dialog-radius: 20px;
+  --dialog-padding: 32px;
+
+  /* ========== Primary Action (Unified) ========== */
+  --g-action: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  --s-action: 0 4px 14px rgba(79, 70, 229, 0.35);
+  --s-action-hover: 0 8px 24px rgba(79, 70, 229, 0.45);
+
+  /* ========== Secondary Button ========== */
+  --btn-secondary-bg: transparent;
+  --btn-secondary-border: 1px solid rgba(0, 0, 0, 0.12);
+  --btn-secondary-color: #3f3f46;
+  --btn-secondary-hover-bg: rgba(0, 0, 0, 0.04);
+
+  /* ========== Modal Overlay ========== */
+  --overlay-bg: rgba(0, 0, 0, 0.4);
+  --overlay-blur: 8px;
 }
 
 /* Mixins / Utility Classes (mapped to local scope) */

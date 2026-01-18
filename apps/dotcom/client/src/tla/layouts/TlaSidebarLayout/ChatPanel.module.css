@@ -1,0 +1,360 @@
+/* ChatPanel Premium Light Styles */
+/* Consistent with the B2C light design system */
+
+/* ========== Chat Panel Container ========== */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+  height: 100%;
+  min-height: 0;
+  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+}
+
+.panelHeader {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  margin-bottom: 4px;
+}
+
+/* ========== Loading State ========== */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  height: 100%;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+}
+
+.loadingSpinner {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+.spinnerRing {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(79, 70, 229, 0.15);
+}
+
+.spinnerActive {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: #6366f1;
+  animation: spin 1s linear infinite;
+}
+
+.loadingText {
+  font-size: 14px;
+  color: var(--c-text-secondary, #71717a);
+  letter-spacing: 0.02em;
+}
+
+/* ========== Push-to-Talk Control ========== */
+.micControl {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 8px 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.micStatusDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.micStatusDotActive {
+  background: #22c55e;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.5);
+  animation: micPulse 2s infinite;
+}
+
+.micStatusDotIdle {
+  background: #d4d4d8;
+}
+
+.micStatusText {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  width: 80px;
+}
+
+.micStatusTextActive {
+  color: var(--c-text-primary, #09090b);
+}
+
+.micStatusTextIdle {
+  color: var(--c-text-secondary, #71717a);
+}
+
+.micHint {
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-text-tertiary, #a1a1aa);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.micHintKey {
+  position: relative;
+  color: var(--c-text-primary, #09090b);
+  font-weight: 600;
+}
+
+/* ========== Chat Messages ========== */
+.chatContainer {
+  margin-top: 16px;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-right: 8px;
+  padding-left: 4px;
+  scrollbar-width: none;
+}
+
+.chatContainer::-webkit-scrollbar {
+  display: none;
+}
+
+.messageRow {
+  display: flex;
+  width: 100%;
+  padding: 0 4px;
+}
+
+.messageRowUser {
+  justify-content: flex-end;
+}
+
+.messageRowAi {
+  justify-content: flex-start;
+}
+
+/* ========== Message Bubbles (Premium Light) ========== */
+.messageBubble {
+  max-width: 85%;
+  padding: 12px 16px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  white-space: pre-wrap;
+  word-break: break-word;
+  transition: all 0.2s ease;
+}
+
+/* User message - primary action gradient */
+.messageBubbleUser {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: #ffffff;
+  border-radius: 18px 18px 4px 18px;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+/* AI message - light glass effect */
+.messageBubbleAi {
+  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+  color: var(--c-text-primary, #09090b);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 18px 18px 18px 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Question message - warm tint */
+.messageBubbleQuestion {
+  background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
+  color: #92400e;
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  border-radius: 18px 18px 18px 4px;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
+}
+
+/* Course details message - blue tint */
+.messageBubbleCourse {
+  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+  color: #1e40af;
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  border-radius: 18px 18px 18px 4px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+/* Message labels */
+.messageLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.messageLabelQuestion {
+  color: #d97706;
+}
+
+.messageLabelCourse {
+  color: #2563eb;
+}
+
+/* ========== Buttons ========== */
+.buttonPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+  transition: all 0.2s ease;
+}
+
+.buttonPrimary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.5);
+  filter: brightness(1.05);
+}
+
+.buttonDanger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #dc2626;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.buttonDanger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+}
+
+.buttonGoogle {
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.buttonGoogle:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.buttonCircle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.buttonCirclePrimary {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+}
+
+.buttonCirclePrimary:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+}
+
+.buttonCircleDanger {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.buttonCircleDanger:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+/* ========== Course Details Button in Chat ========== */
+.courseDetailsButton {
+  margin-top: 14px;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.courseDetailsButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+  filter: brightness(1.05);
+}
+
+/* ========== Animations ========== */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes micPulse {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}

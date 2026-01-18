@@ -4,6 +4,7 @@ import { useAuth, useClerk, useUser } from '@clerk/clerk-react'
 import { getAnonymousUserId } from '../utils/anonymousUserId'
 import { listenForLogin, broadcastUserLoggedIn } from '../utils/learningSessionChannel'
 
+
 // Import header styles from course-detail-info
 import headerStyles from './styles/course-header.module.css'
 import './styles/course-variables.module.css'
@@ -192,8 +193,9 @@ export function Component() {
 			{/* Main Content */}
 			<main className={styles.main}>
 				<div className={styles.content}>
+
 					<h1 className={styles.heading}>
-						Understand the curriculum by talking to teacher
+						Meet the AI Teacher Who Explains System Design Visually
 					</h1>
 					<button
 						className={styles.talkButton}
@@ -208,7 +210,7 @@ export function Component() {
 						) : (
 							<>
 								<MicIcon className={styles.buttonIcon} />
-								Talk to Teacher
+								Talk to AI Teacher
 							</>
 						)}
 					</button>
@@ -276,6 +278,9 @@ export function Component() {
 		</div>
 	)
 }
+
+
+
 
 function GoogleIcon({ className }: { className?: string }) {
 	return (

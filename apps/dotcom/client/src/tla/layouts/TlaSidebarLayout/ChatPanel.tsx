@@ -12,6 +12,7 @@ import { clearLocalSessionState } from '../../utils/local-session-state'
 import { createLearnspaceListener, listenForLogin, broadcastUserLoggedIn } from '../../../utils/learningSessionChannel'
 import { TlaCtaButton } from '../../components/TlaCtaButton/TlaCtaButton'
 import { TlaIcon } from '../../components/TlaIcon/TlaIcon'
+import styles from './ChatPanel.module.css'
 
 import {
 	LiveKitRoom,
@@ -181,107 +182,25 @@ function MicPushToTalk({ hotkey = 'Space' }: { hotkey?: string }) {
 	}, [localParticipant, connection, hotkey, setMic, publishPtt, micEnabled])
 
 	return (
-		<div
-			style={{
-				display: 'flex',
-				flexDirection: 'column',
-				gap: 8,
-				marginTop: 8,
-			}}
-		>
-			<style>
-				{`
-					@keyframes mic-pulse {
-						0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); }
-						70% { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); }
-						100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
-					}
-					@keyframes mic-wave {
-						0%, 100% { transform: scaleY(1); }
-						50% { transform: scaleY(1.5); }
-					}
-				`}
-			</style>
-
-			<div
-				style={{
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'space-between',
-					padding: '6px 8px 6px 16px',
-					borderRadius: 16,
-					background: 'rgba(255, 255, 255, 0.03)',
-					border: '1px solid rgba(255, 255, 255, 0.08)',
-					backdropFilter: 'blur(10px)',
-				}}
-			>
+		<div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+			<div className={styles.micControl}>
 				{/* Status Indicator */}
 				<div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
 					<div
-						style={{
-							width: 10,
-							height: 10,
-							borderRadius: '50%',
-							background: micEnabled ? '#4ade80' : '#ef4444',
-							boxShadow: micEnabled ? '0 0 12px #4ade80' : 'none',
-							animation: micEnabled ? 'mic-pulse 2s infinite' : 'none',
-							transition: 'all 0.3s ease',
-						}}
+						className={`${styles.micStatusDot} ${micEnabled ? styles.micStatusDotActive : styles.micStatusDotIdle}`}
 					/>
 					<div
-						style={{
-							fontSize: 13,
-							fontWeight: 500,
-							color: micEnabled ? '#ffffff' : 'rgba(255,255,255,0.6)',
-							letterSpacing: '0.02em',
-							width: 80, // Fixed width to prevent layout jump
-						}}
+						className={`${styles.micStatusText} ${micEnabled ? styles.micStatusTextActive : styles.micStatusTextIdle}`}
 					>
 						{micEnabled ? 'Listening' : 'Idle'}
 					</div>
 				</div>
 
 				{/* Action Label */}
-				<div
-					style={{
-						padding: '0 16px',
-						fontSize: 13,
-						fontWeight: 500,
-						color: 'rgba(255,255,255,0.5)',
-						letterSpacing: '0.02em',
-						whiteSpace: 'nowrap',
-					}}
-				>
-					Hold{' '}
-					<span style={{ position: 'relative', color: '#fff', fontWeight: 600 }}>
-						spacebar
-						<svg
-							viewBox="0 0 70 8"
-							fill="none"
-							xmlns="http://www.w3.org/2000/svg"
-							style={{
-								position: 'absolute',
-								bottom: -6,
-								left: -2,
-								width: 'calc(100% + 4px)',
-								height: 8,
-							}}
-						>
-							<path
-								d="M2 2C15 6 55 6 68 2"
-								stroke="#a78bfa" // A nice soft purple/violet to match the theme
-								strokeWidth="2"
-								strokeLinecap="round"
-								style={{ vectorEffect: 'non-scaling-stroke' }}
-							/>
-						</svg>
-					</span>{' '}
-					and speak
+				<div className={styles.micHint}>
+					Hold <span className={styles.micHintKey}>spacebar</span> and speak
 				</div>
 			</div>
-
-			{/* Footnote */}
-
 		</div>
 	)
 }
@@ -417,121 +336,37 @@ function UnifiedChat({
 				const isQuestion = m.kind === 'ai_question'
 				const isCourse = m.kind === 'ai_course'
 
+				// Determine bubble class
+				const bubbleClass = isMe
+					? styles.messageBubbleUser
+					: isCourse
+						? styles.messageBubbleCourse
+						: isQuestion
+							? styles.messageBubbleQuestion
+							: styles.messageBubbleAi
+
 				return (
 					<div
 						key={m.id}
-						style={{
-							display: 'flex',
-							justifyContent: isMe ? 'flex-end' : 'flex-start',
-							width: '100%',
-							padding: '0 4px',
-						}}
+						className={`${styles.messageRow} ${isMe ? styles.messageRowUser : styles.messageRowAi}`}
 					>
-						<div
-							style={{
-								maxWidth: '85%',
-								padding: '12px 16px',
-								borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-								fontSize: '14.5px',
-								lineHeight: 1.5,
-								letterSpacing: '0.01em',
-								whiteSpace: 'pre-wrap',
-								wordBreak: 'break-word',
-								color: isMe ? '#ffffff' : '#f3f4f6', // Slightly softer white for AI text
-
-								// Premium Styling
-								background: isMe
-									? 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' // Indigo to Violet
-									: isCourse
-										? 'linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8))' // Deep Slate
-										: isQuestion
-											? 'linear-gradient(145deg, rgba(31, 41, 55, 0.7), rgba(17, 24, 39, 0.8))' // Gray
-											: 'rgba(255, 255, 255, 0.04)', // Glassy default
-
-								border: isMe
-									? 'none'
-									: isCourse
-										? '1px solid rgba(59, 130, 246, 0.3)'
-										: isQuestion
-											? '1px solid rgba(234, 179, 8, 0.3)'
-											: '1px solid rgba(255, 255, 255, 0.08)',
-
-								boxShadow: isMe
-									? '0 4px 12px rgba(124, 58, 237, 0.25)' // Purple glow for user
-									: '0 2px 10px rgba(0, 0, 0, 0.1)', // Subtle shadow for AI
-
-								backdropFilter: isMe ? 'none' : 'blur(10px)',
-							}}
-						>
+						<div className={`${styles.messageBubble} ${bubbleClass}`}>
 							{isCourse ? (
-								<div
-									style={{
-										display: 'flex',
-										alignItems: 'center',
-										gap: 6,
-										fontSize: 11,
-										textTransform: 'uppercase',
-										letterSpacing: '0.05em',
-										fontWeight: 600,
-										color: '#60a5fa',
-										marginBottom: 8,
-									}}
-								>
+								<div className={`${styles.messageLabel} ${styles.messageLabelCourse}`}>
 									<span>📚</span> Course Details
 								</div>
 							) : isQuestion ? (
-								<div
-									style={{
-										display: 'flex',
-										alignItems: 'center',
-										gap: 6,
-										fontSize: 11,
-										textTransform: 'uppercase',
-										letterSpacing: '0.05em',
-										fontWeight: 600,
-										color: '#facc15',
-										marginBottom: 8,
-									}}
-								>
+								<div className={`${styles.messageLabel} ${styles.messageLabelQuestion}`}>
 									<span>❓</span> Question
 								</div>
 							) : null}
 
-							<div style={{ position: 'relative', zIndex: 1 }}>{m.text}</div>
+							<div>{m.text}</div>
 
 							{isCourse && (
 								<button
 									onClick={handleClickCourseDetails}
-									style={{
-										marginTop: 14,
-										width: '100%',
-										padding: '10px 16px',
-										borderRadius: 12,
-										border: 'none',
-										// Vibrant gradient button
-										background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-										boxShadow:
-											'0 4px 6px -1px rgba(59, 130, 246, 0.4), 0 2px 4px -1px rgba(59, 130, 246, 0.2)',
-										color: '#fff',
-										fontSize: 13,
-										fontWeight: 600,
-										cursor: 'pointer',
-										display: 'flex',
-										alignItems: 'center',
-										justifyContent: 'center',
-										gap: 6,
-										transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-									}}
-									onMouseEnter={(e) => {
-										e.currentTarget.style.transform = 'translateY(-1px)'
-										e.currentTarget.style.boxShadow = '0 6px 12px rgba(59, 130, 246, 0.5)'
-										e.currentTarget.style.filter = 'brightness(1.05)'
-									}}
-									onMouseLeave={(e) => {
-										e.currentTarget.style.transform = 'translateY(0)'
-										e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(59, 130, 246, 0.4)'
-										e.currentTarget.style.filter = 'brightness(1)'
-									}}
+									className={styles.courseDetailsButton}
 								>
 									Course Details
 								</button>
@@ -1211,41 +1046,12 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 	// Show loading state if agent is not available yet
 	if (!agent) {
 		return (
-			<div
-				className="chat-panel tl-theme__dark"
-				style={{
-					display: 'flex',
-					flexDirection: 'column',
-					gap: 16,
-					padding: 20,
-					height: '100%',
-					minHeight: 0,
-					alignItems: 'center',
-					justifyContent: 'center',
-				}}
-			>
-				<div style={{ position: 'relative', width: 60, height: 60 }}>
-					<div
-						style={{
-							position: 'absolute',
-							inset: 0,
-							borderRadius: '50%',
-							border: '2px solid rgba(99, 102, 241, 0.2)',
-						}}
-					/>
-					<div
-						style={{
-							position: 'absolute',
-							inset: 0,
-							borderRadius: '50%',
-							border: '2px solid transparent',
-							borderTopColor: '#6366f1',
-							animation: 'spin 1s linear infinite',
-						}}
-					/>
-					<style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+			<div className={styles.loadingContainer}>
+				<div className={styles.loadingSpinner}>
+					<div className={styles.spinnerRing} />
+					<div className={styles.spinnerActive} />
 				</div>
-				<div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.02em' }}>
+				<div className={styles.loadingText}>
 					Initializing Teacher...
 				</div>
 			</div>
@@ -1253,27 +1059,8 @@ export function ChatPanel({ agent }: { agent?: FairyAgent }) {
 	}
 
 	return (
-		<div
-			className="chat-panel tl-theme__dark"
-			style={{
-				display: 'flex',
-				flexDirection: 'column',
-				gap: 16,
-				padding: '20px 24px',
-				height: '100%',
-				minHeight: 0,
-			}}
-		>
-			<div
-				style={{
-					display: 'flex',
-					gap: 12,
-					alignItems: 'center',
-					justifyContent: 'space-between',
-					paddingBottom: 16,
-					borderBottom: '1px solid rgba(255,255,255,0.06)',
-					marginBottom: 4,
-				}}
+		<div className={styles.panel}>
+			<div className={styles.panelHeader}
 			>
 				<ChatControls 
 					lkConnect={lkConnect}
