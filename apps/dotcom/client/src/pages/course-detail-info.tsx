@@ -24,7 +24,9 @@ import oldStyles from './course-detail-info.module.css'
 import { TimeLeft } from '../components/TimeLeft'
 import { LoginRequiredDialog } from './components/LoginRequiredDialog'
 import { SessionActiveDialog } from './components/SessionActiveDialog'
+import { DesktopRequiredDialog } from './components/DesktopRequiredDialog'
 import { checkLearnspaceStatus, broadcastUserLoggedIn } from '../utils/learningSessionChannel'
+import { getIsMobileViewport } from '../tla/hooks/useViewportContext'
 
 type TabType = 'curriculum' | 'pricing'
 
@@ -223,6 +225,7 @@ function CurriculumSection({
 }) {
 	const [showLoginDialog, setShowLoginDialog] = useState(false)
 	const [showSessionActiveDialog, setShowSessionActiveDialog] = useState(false)
+	const [showDesktopRequiredDialog, setShowDesktopRequiredDialog] = useState(false)
 
 	// Handler for learning material clicks (concepts and case studies)
 	const handleLearningMaterialClick = async (
@@ -232,6 +235,12 @@ function CurriculumSection({
 	) => {
 		if (!isSignedIn) {
 			setShowLoginDialog(true)
+			return
+		}
+
+		// Check if user is on mobile - show desktop required dialog
+		if (getIsMobileViewport()) {
+			setShowDesktopRequiredDialog(true)
 			return
 		}
 
@@ -344,6 +353,11 @@ function CurriculumSection({
 			{/* Session Active Dialog */}
 			{showSessionActiveDialog && (
 				<SessionActiveDialog onClose={() => setShowSessionActiveDialog(false)} />
+			)}
+
+			{/* Desktop Required Dialog (for mobile users) */}
+			{showDesktopRequiredDialog && (
+				<DesktopRequiredDialog onClose={() => setShowDesktopRequiredDialog(false)} />
 			)}
 		</div>
 	)
